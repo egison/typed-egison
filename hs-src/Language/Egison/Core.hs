@@ -77,61 +77,76 @@ import Language.Egison.Parser
 evalTopExprs :: Env -> [EgisonTopExpr] -> EgisonM Env
 evalTopExprs env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  env <- recursiveBind env bindings
-  forM_ rest $ evalTopExpr env
-  return env
- where
-  collectDefs :: [EgisonTopExpr] -> [(Var, EgisonExpr)] -> [EgisonTopExpr] -> EgisonM ([(Var, EgisonExpr)], [EgisonTopExpr])
-  collectDefs (expr:exprs) bindings rest =
-    case expr of
-      Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
-      Load file -> do
-        exprs' <- loadLibraryFile file
-        collectDefs (exprs' ++ exprs) bindings rest
-      LoadFile file -> do
-        exprs' <- loadFile file
-        collectDefs (exprs' ++ exprs) bindings rest
-      Execute _ -> collectDefs exprs bindings (expr : rest)
-      _ -> collectDefs exprs bindings rest
-  collectDefs [] bindings rest = return (bindings, reverse rest)
+  let env1 = env { envImplicitConversion = collectImplicitConversion exprs ++ envImplicitConversion env}
+  env2 <- recursiveBind env1 bindings
+  forM_ rest $ evalTopExpr env2
+  return env2
+    where
+      collectImplicitConversion :: [EgisonTopExpr] -> [(Type,Type,EgisonExpr)]
+      collectImplicitConversion [] = []
+      collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
+      collectImplicitConversion (_:rest) = collectImplicitConversion rest
+      collectDefs :: [EgisonTopExpr] -> [(Var, EgisonExpr)] -> [EgisonTopExpr] -> EgisonM ([(Var, EgisonExpr)], [EgisonTopExpr])
+      collectDefs (expr:exprs) bindings rest =
+        case expr of
+          Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
+          Load file -> do
+            exprs' <- loadLibraryFile file
+            collectDefs (exprs' ++ exprs) bindings rest
+          LoadFile file -> do
+            exprs' <- loadFile file
+            collectDefs (exprs' ++ exprs) bindings rest
+          Execute _ -> collectDefs exprs bindings (expr : rest)
+          _ -> collectDefs exprs bindings rest
+      collectDefs [] bindings rest = return (bindings, reverse rest)
 
 evalTopExprsTestOnly :: Env -> [EgisonTopExpr] -> EgisonM Env
 evalTopExprsTestOnly env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  env <- recursiveBind env bindings
-  forM_ rest $ evalTopExpr env
-  return env
+  let env1 = env { envImplicitConversion = collectImplicitConversion exprs ++ envImplicitConversion env}
+  env2 <- recursiveBind env1 bindings
+  forM_ rest $ evalTopExpr env2
+  return env2
  where
-  collectDefs :: [EgisonTopExpr] -> [(Var, EgisonExpr)] -> [EgisonTopExpr] -> EgisonM ([(Var, EgisonExpr)], [EgisonTopExpr])
-  collectDefs (expr:exprs) bindings rest =
-    case expr of
-      Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
-      Load file -> do
-        exprs' <- loadLibraryFile file
-        collectDefs (exprs' ++ exprs) bindings rest
-      LoadFile file -> do
-        exprs' <- loadFile file
-        collectDefs (exprs' ++ exprs) bindings rest
-      Test _ -> collectDefs exprs bindings (expr : rest)
-      Redefine _ _ -> collectDefs exprs bindings (expr : rest)
-      _ -> collectDefs exprs bindings rest
-  collectDefs [] bindings rest = return (bindings, reverse rest)
+      collectImplicitConversion :: [EgisonTopExpr] -> [(Type,Type,EgisonExpr)]
+      collectImplicitConversion [] = []
+      collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
+      collectImplicitConversion (_:rest) = collectImplicitConversion rest
+      collectDefs :: [EgisonTopExpr] -> [(Var, EgisonExpr)] -> [EgisonTopExpr] -> EgisonM ([(Var, EgisonExpr)], [EgisonTopExpr])
+      collectDefs (expr:exprs) bindings rest =
+        case expr of
+          Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
+          Load file -> do
+            exprs' <- loadLibraryFile file
+            collectDefs (exprs' ++ exprs) bindings rest
+          LoadFile file -> do
+            exprs' <- loadFile file
+            collectDefs (exprs' ++ exprs) bindings rest
+          Test _ -> collectDefs exprs bindings (expr : rest)
+          Redefine _ _ -> collectDefs exprs bindings (expr : rest)
+          _ -> collectDefs exprs bindings rest
+      collectDefs [] bindings rest = return (bindings, reverse rest)
 
 evalTopExprsNoIO :: Env -> [EgisonTopExpr] -> EgisonM Env
 evalTopExprsNoIO env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  env <- recursiveBind env bindings
-  forM_ rest $ evalTopExpr env
-  return env
+  let env1 = env { envImplicitConversion = collectImplicitConversion exprs ++ envImplicitConversion env}
+  env2 <- recursiveBind env1 bindings
+  forM_ rest $ evalTopExpr env2
+  return env2
  where
-  collectDefs :: [EgisonTopExpr] -> [(Var, EgisonExpr)] -> [EgisonTopExpr] -> EgisonM ([(Var, EgisonExpr)], [EgisonTopExpr])
-  collectDefs (expr:exprs) bindings rest =
-    case expr of
-      Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
-      Load _ -> throwError $ Default "No IO support"
-      LoadFile _ -> throwError $ Default "No IO support"
-      _ -> collectDefs exprs bindings (expr : rest)
-  collectDefs [] bindings rest = return (bindings, reverse rest)
+      collectImplicitConversion :: [EgisonTopExpr] -> [(Type,Type,EgisonExpr)]
+      collectImplicitConversion [] = []
+      collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
+      collectImplicitConversion (_:rest) = collectImplicitConversion rest
+      collectDefs :: [EgisonTopExpr] -> [(Var, EgisonExpr)] -> [EgisonTopExpr] -> EgisonM ([(Var, EgisonExpr)], [EgisonTopExpr])
+      collectDefs (expr:exprs) bindings rest =
+        case expr of
+          Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
+          Load _ -> throwError $ Default "No IO support"
+          LoadFile _ -> throwError $ Default "No IO support"
+          _ -> collectDefs exprs bindings (expr : rest)
+      collectDefs [] bindings rest = return (bindings, reverse rest)
 
 evalTopExpr :: Env -> EgisonTopExpr -> EgisonM Env
 evalTopExpr env topExpr = do
@@ -154,6 +169,7 @@ evalTopExpr' env (Execute expr) = do
     _ -> throwError $ TypeMismatch "io" io
 evalTopExpr' env (Load file) = loadLibraryFile file >>= evalTopExprs env >>= return . ((,) Nothing)
 evalTopExpr' env (LoadFile file) = loadFile file >>= evalTopExprs env >>= return . ((,) Nothing)
+evalTopExpr' env (ImplicitConversion t1 t2 e) = return (Nothing, env { envImplicitConversion = (t1,t2,e):envImplicitConversion env })
 
 evalExpr :: Env -> EgisonExpr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c
