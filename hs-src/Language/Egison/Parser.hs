@@ -132,7 +132,8 @@ topExpr = try (Test <$> expr)
                    <|> testExpr
                    <|> executeExpr
                    <|> loadFileExpr
-                   <|> loadExpr))
+                   <|> loadExpr
+                   <|> implicitConversionExpr))
       <?> "top-level expression"
 
 defineExpr :: Parser EgisonTopExpr
@@ -166,6 +167,12 @@ loadFileExpr = keywordLoadFile >> LoadFile <$> stringLiteral
 
 loadExpr :: Parser EgisonTopExpr
 loadExpr = keywordLoad >> Load <$> stringLiteral
+
+implicitConversionExpr :: Parser EgisonTopExpr
+implicitConversionExpr = keywordImplicitConversion >> ImplicitConversion <$> parseType <*> parseType <*> expr
+
+parseType :: Parser Type
+parseType = (keywordTypeBool >> return TypeBool) <|> (keywordTypeInt >> return TypeInt)
 
 exprs :: Parser [EgisonExpr]
 exprs = endBy expr whiteSpace
@@ -951,6 +958,8 @@ keywordUserrefs             = reserved "user-refs"
 keywordUserrefsNew          = reserved "user-refs!"
 keywordFunction             = reserved "function"
 keywordImplicitConversion   = reserved "implicit-conversion"
+keywordTypeBool             = reserved "type-bool"
+keywordTypeInt              = reserved "type-int"
 
 sign :: Num a => Parser (a -> a)
 sign = (char '-' >> return negate)
