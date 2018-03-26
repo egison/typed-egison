@@ -2,8 +2,8 @@
 stack build
 if [ $# -gt 0 ]; then
     for f in $@; do
-        stack exec typecheck -- -t $f
+        stack exec egison -- --no-io -t $f
     done
 else
-    stack exec typecheck
+    stack exec egison -- --no-io
 fi

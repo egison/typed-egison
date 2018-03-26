@@ -21,6 +21,7 @@ import System.IO
 import Language.Egison
 import Language.Egison.Util
 import Language.Egison.MathOutput
+import qualified Language.Egison.TypeCheck as TC
 
 main :: IO ()
 main = do args <- getArgs
@@ -32,6 +33,7 @@ main = do args <- getArgs
             Options {optEvalString = mExpr, optExecuteString = mCmd, optSubstituteString = mSub, optFieldInfo = fieldInfo, optLoadLibs = loadLibs, optLoadFiles = loadFiles, optPrompt = prompt, optShowBanner = bannerFlag, optTsvOutput = tsvFlag, optNoIO = noIOFlag, optMathExpr = mathExprLang} -> do
               coreEnv <- if noIOFlag then initialEnvNoIO else initialEnv
               mEnv <- evalEgisonTopExprs coreEnv $ (map Load loadLibs) ++ (map LoadFile loadFiles)
+              -- let mEnv = Right nullEnv :: Either EgisonError Env
               case mEnv of
                 Left err -> putStrLn $ show err
                 Right env -> do
@@ -254,6 +256,15 @@ repl noIOFlag mathExprLang env prompt = do
         putStrLn "error: No IO support"
         loop env
       (_, Just (topExpr, _)) -> do
+        -- show AST for debug
+        ast <-  fromEgisonM $ readTopExpr topExpr
+        print ast
+        let tc = ast >>= (return . TC.checkTopExpr)
+        print tc
+        -- show AST for debug
+        -- show Env for debug
+        print env
+        -- show Env for debug
         result <- liftIO $ runEgisonTopExpr' env topExpr
         case result of
           Left err -> do
