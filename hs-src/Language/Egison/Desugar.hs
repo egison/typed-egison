@@ -27,7 +27,7 @@ import Data.Set (Set)
 import Data.Char (toUpper)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Language.Egison.Types
+import Language.Egison.Expressions
 
 type Subst = [(String, EgisonExpr)]
 

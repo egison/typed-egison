@@ -74,8 +74,8 @@ Library
                    Language.Egison
                    Language.Egison.Core
                    Language.Egison.Desugar
+                   Language.Egison.Expressions
                    Language.Egison.Types
-                   Language.Egison.TypeCheck
                    Language.Egison.Parser
                    Language.Egison.Primitives
                    Language.Egison.Util

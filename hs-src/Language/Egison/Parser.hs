@@ -47,7 +47,7 @@ import qualified Text.Parsec.Token as P
 import qualified Data.Text as T
 import Text.Regex.TDFA
 
-import Language.Egison.Types
+import Language.Egison.Expressions
 import Language.Egison.Desugar
 import Paths_egison (getDataFileName)
 

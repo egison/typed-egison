@@ -7,7 +7,7 @@ This is the top module of Egison.
 -}
 
 module Language.Egison
-       ( module Language.Egison.Types
+       ( module Language.Egison.Expressions
        , module Language.Egison.Parser
        , module Language.Egison.Primitives
        -- * Eval Egison expressions
@@ -33,7 +33,7 @@ module Language.Egison
 import Data.Version
 import qualified Paths_egison as P
 
-import Language.Egison.Types
+import Language.Egison.Expressions
 import Language.Egison.Parser
 import Language.Egison.Primitives
 import Language.Egison.Core

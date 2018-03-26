@@ -36,7 +36,7 @@ import qualified Data.Text.IO as T
 import qualified Database.SQLite3 as SQLite
  --}  -- for 'egison-sqlite'
 
-import Language.Egison.Types
+import Language.Egison.Expressions
 import Language.Egison.Parser
 import Language.Egison.Core
 

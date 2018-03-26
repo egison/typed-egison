@@ -67,7 +67,7 @@ import qualified Data.HashMap.Strict as HashMap
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Language.Egison.Types
+import Language.Egison.Expressions
 import Language.Egison.Parser
 
 --

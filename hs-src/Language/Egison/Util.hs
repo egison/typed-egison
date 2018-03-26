@@ -13,7 +13,7 @@ import Text.Regex.TDFA
 import System.Console.Haskeline hiding (handle, catch, throwTo)
 import Control.Monad.Except (liftIO)
 
-import Language.Egison.Types
+import Language.Egison.Expressions
 import Language.Egison.Parser
 
 -- |Get Egison expression from the prompt. We can handle multiline input.

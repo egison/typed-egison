@@ -21,7 +21,7 @@ import System.IO
 import Language.Egison
 import Language.Egison.Util
 import Language.Egison.MathOutput
-import qualified Language.Egison.TypeCheck as TC
+import qualified Language.Egison.Types as TC
 
 main :: IO ()
 main = do args <- getArgs
