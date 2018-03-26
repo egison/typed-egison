@@ -1,0 +1,13 @@
+(define $N 3)
+(define $params [| x y z |])
+(define $g [| [| 1 0 0 |] [| 0 1 0 |] [| 0 0 1 |] |])
+
+(define $d
+  (lambda [%X]
+    !((flip ∂/∂) params X)))
+
+(d (f x y z))
+;[| (f|1 x y z) (f|2 x y z) (f|3 x y z) |]
+
+(df-normalize (d (d (f x y z))))
+;[| [| 0 0 0 |] [| 0 0 0 |] [| 0 0 0 |] |]

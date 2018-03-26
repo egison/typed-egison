@@ -1,0 +1,4 @@
+(define $main
+  (lambda [$argv]
+    (each print (map show primes))))
+
