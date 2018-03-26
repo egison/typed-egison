@@ -862,7 +862,10 @@ reservedKeywords =
   , "user-refs!"
   , "function"
   , "something"
-  , "undefined"]
+  , "undefined"
+  , "implicit-conversion"
+  , "type-bool"
+  , "type-int" ]
   
 reservedOperators :: [String]
 reservedOperators = 
@@ -947,6 +950,7 @@ keywordSuprefsNew           = reserved "suprefs!"
 keywordUserrefs             = reserved "user-refs"
 keywordUserrefsNew          = reserved "user-refs!"
 keywordFunction             = reserved "function"
+keywordImplicitConversion   = reserved "implicit-conversion"
 
 sign :: Num a => Parser (a -> a)
 sign = (char '-' >> return negate)
