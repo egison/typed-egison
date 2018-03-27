@@ -7,7 +7,10 @@ This module contains static type checking algorithm for Egison
 I suggest you to import this file using qualified import.
 -}
 
-module Language.Egison.Types where
+module Language.Egison.Types(
+  innersToExprs
+  , checkTopExpr
+  )where
 
 import qualified Language.Egison.Expressions as EE
 import Language.Egison.Expressions (Type(..), TypeVarIndex)
@@ -103,11 +106,6 @@ innersToExprs (EE.ElementExpr e:rest) = e:(innersToExprs rest)
 innersToExprs ((EE.SubCollectionExpr (EE.CollectionExpr is)):rest) =
     innersToExprs is ++ innersToExprs rest
 
-removeTensorMap :: EE.EgisonExpr -> EE.EgisonExpr
-removeTensorMap (EE.TensorMapExpr (EE.LambdaExpr _ b) _) = removeTensorMap b
-removeTensorMap (EE.TensorMap2Expr (EE.LambdaExpr _ b) _ _) = removeTensorMap b
-removeTensorMap e = e
-
 lookupTypeEnv :: [String] -> TypeEnvironment -> MakeSubstition Type
 lookupTypeEnv e [] = do
   i <- getNewTypeVarIndex
@@ -154,11 +152,10 @@ exprToSub' env ty (EE.CollectionExpr es) = do
     return (sub3, applySub sub3 ty')
 exprToSub' env ty (EE.LambdaExpr args body) = do
     let args1 = filter (/= []) $ map f args
-    let body1 = removeTensorMap body
     arg1tys <- mapM (\_ -> do { x <- getNewTypeVarIndex; return (TypeVar x)}) args1
     let env1 = (zip args1 arg1tys) ++ env
     tv <- getNewTypeVarIndex
-    (sub1,ty1) <- exprToSub' env1 (TypeVar tv) body1
+    (sub1,ty1) <- exprToSub' env1 (TypeVar tv) body
     sub2 <- unifySub $ (ty, TypeFun (TypeTuple arg1tys) ty1):sub1
     return (sub2, applySub sub2 ty)
       where f (EE.TensorArg s) = [s]

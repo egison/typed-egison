@@ -14,7 +14,7 @@ module Language.Egison.ImplConv(
 
 import qualified Language.Egison.Expressions as EE
 import Language.Egison.Expressions (Type(..), EgisonExpr(..), EgisonTopExpr(..), Env, refEnvImplConv, deleteEnvType)
-import Language.Egison.Types (innersToExprs, removeTensorMap)
+import Language.Egison.Types (innersToExprs)
 import Control.Monad.Reader (Reader, ask, local, runReader)
 
 implConvTopExpr :: Env -> EgisonTopExpr -> [EgisonExpr]
@@ -47,7 +47,7 @@ applyImplConv' (CollectionExpr es) = do
 applyImplConv' (LambdaExpr args body) = do
     let args1 = filter (/= EE.Var []) $ map f args
     -- To realize shadowing of variables in args, we must delete args from environment
-    body1 <- local (\e -> deleteEnvType e args1) $ applyImplConv' (removeTensorMap body)
+    body1 <- local (\e -> deleteEnvType e args1) $ applyImplConv' body
     return $ map (\x -> LambdaExpr args x) body1
       where f (EE.TensorArg s) = EE.Var [s]
             f _ = EE.Var []
