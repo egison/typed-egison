@@ -82,7 +82,7 @@ module Language.Egison.Expressions
     , Inner (..)
     , EgisonWHNF (..)
     -- * Environment
-    , Env (..)
+    , Env
     , Var (..)
     , VarWithIndexType (..)
     , VarWithIndices (..)
@@ -90,6 +90,8 @@ module Language.Egison.Expressions
     , nullEnv
     , extendEnv
     , refVar
+    , extendEnvImplConv
+    , refEnvImplConv
     -- * Pattern matching
     , Match
     , PMMode (..)
@@ -1525,7 +1527,7 @@ class (EgisonWHNF a) => EgisonObject a where
 -- Environment
 --
 
-data Env = Env { envExpr::[HashMap Var ObjectRef], envType::[(Var, Type)], envImplicitConversion::[(Type, Type, EgisonExpr)] }
+data Env = Env { envExpr::[HashMap Var ObjectRef], envType::[(Var, Type)], envImplConv::[(Type, Type, EgisonExpr)] }
  deriving (Show)
 
 newtype Var = Var [String]
@@ -1589,7 +1591,7 @@ instance Show (Index EgisonValue) where
                          _ -> "|" ++ show i
 
 nullEnv :: Env
-nullEnv = Env { envExpr = [], envType = [], envImplicitConversion = [] }
+nullEnv = Env { envExpr = [], envType = [], envImplConv = [] }
 
 extendEnv :: Env -> [Binding] -> Env
 extendEnv env bind = env { envExpr=(HashMap.fromList bind):(envExpr env) }
@@ -1597,8 +1599,11 @@ extendEnv env bind = env { envExpr=(HashMap.fromList bind):(envExpr env) }
 refVar :: Env -> Var -> Maybe ObjectRef
 refVar env var = msum $ map (HashMap.lookup var) (envExpr env)
 
-extendEnvImplicitConversion :: Env -> (Type,Type,EgisonExpr) -> Env
-extendEnvImplicitConversion e i = e { envImplicitConversion=i:envImplicitConversion e }
+extendEnvImplConv :: Env -> [(Type,Type,EgisonExpr)] -> Env
+extendEnvImplConv e is = e { envImplConv=is++envImplConv e }
+
+refEnvImplConv :: Env -> Type -> [(Type, EgisonExpr)]
+refEnvImplConv e t = map (\(t1,t2,e) -> (t2,e)) $ filter (\(t1,_,_) -> t1 == t) $ envImplConv e
 
 --
 -- Pattern Match

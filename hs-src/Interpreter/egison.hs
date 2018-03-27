@@ -22,6 +22,7 @@ import Language.Egison
 import Language.Egison.Util
 import Language.Egison.MathOutput
 import qualified Language.Egison.Types as TC
+import Language.Egison.ImplConv (implConvTopExpr)
 
 main :: IO ()
 main = do args <- getArgs
@@ -261,9 +262,12 @@ repl noIOFlag mathExprLang env prompt = do
       (_, Just (topExpr, _)) -> do
         -- show AST for debug
         ast <-  fromEgisonM $ readTopExpr topExpr
+        print "AST of input is following."
         print ast
         let tc = ast >>= (return . TC.checkTopExpr)
         print tc
+        let ics = liftM (implConvTopExpr env) ast
+        print ics
         -- show AST for debug
         result <- liftIO $ runEgisonTopExpr' env topExpr
         case result of

@@ -77,7 +77,7 @@ import Language.Egison.Parser
 evalTopExprs :: Env -> [EgisonTopExpr] -> EgisonM Env
 evalTopExprs env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  let env1 = env { envImplicitConversion = collectImplicitConversion exprs ++ envImplicitConversion env}
+  let env1 = extendEnvImplConv env $ collectImplicitConversion exprs
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
@@ -103,7 +103,7 @@ evalTopExprs env exprs = do
 evalTopExprsTestOnly :: Env -> [EgisonTopExpr] -> EgisonM Env
 evalTopExprsTestOnly env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  let env1 = env { envImplicitConversion = collectImplicitConversion exprs ++ envImplicitConversion env}
+  let env1 = extendEnvImplConv env $ collectImplicitConversion exprs
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
@@ -130,7 +130,7 @@ evalTopExprsTestOnly env exprs = do
 evalTopExprsNoIO :: Env -> [EgisonTopExpr] -> EgisonM Env
 evalTopExprsNoIO env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  let env1 = env { envImplicitConversion = collectImplicitConversion exprs ++ envImplicitConversion env}
+  let env1 = extendEnvImplConv env $ collectImplicitConversion exprs
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
@@ -169,7 +169,7 @@ evalTopExpr' env (Execute expr) = do
     _ -> throwError $ TypeMismatch "io" io
 evalTopExpr' env (Load file) = loadLibraryFile file >>= evalTopExprs env >>= return . ((,) Nothing)
 evalTopExpr' env (LoadFile file) = loadFile file >>= evalTopExprs env >>= return . ((,) Nothing)
-evalTopExpr' env (ImplicitConversion t1 t2 e) = return (Nothing, env { envImplicitConversion = (t1,t2,e):envImplicitConversion env })
+evalTopExpr' env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv env [(t1,t2,e)])
 
 evalExpr :: Env -> EgisonExpr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c

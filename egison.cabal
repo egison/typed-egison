@@ -80,6 +80,7 @@ Library
                    Language.Egison.Primitives
                    Language.Egison.Util
                    Language.Egison.MathOutput
+                   Language.Egison.ImplConv
   Other-modules:   Paths_egison
   ghc-options:  -O3
 
