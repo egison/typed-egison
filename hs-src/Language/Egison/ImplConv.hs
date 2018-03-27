@@ -39,7 +39,7 @@ applyImplConv' (IfExpr e1 e2 e3) = do
   return $ IfExpr <$> e1s <*> e2s <*> e3s
 applyImplConv' (TupleExpr es) = do
   ess <- mapM applyImplConv' es
-  return $ TupleExpr <$> ess
+  return $ TupleExpr <$> cartesian ess
 applyImplConv' (CollectionExpr es) = do
   let es1 = innersToExprs es
   ess <- mapM applyImplConv' es1

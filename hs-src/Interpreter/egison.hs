@@ -248,6 +248,7 @@ repl noIOFlag mathExprLang env prompt = do
   loop env = (do 
     -- show Env for debug
     print env
+    putStrLn "---------------------\n"
     -- show Env for debug
     home <- getHomeDirectory
     input <- liftIO $ runInputT (settings home) $ getEgisonExpr prompt
@@ -264,10 +265,13 @@ repl noIOFlag mathExprLang env prompt = do
         ast <-  fromEgisonM $ readTopExpr topExpr
         print "AST of input is following."
         print ast
+        putStrLn "---------------------\n"
         let tc = ast >>= (return . TC.checkTopExpr)
         print tc
+        putStrLn "---------------------\n"
         let ics = liftM (implConvTopExpr env) ast
         print ics
+        putStrLn "---------------------\n"
         -- show AST for debug
         result <- liftIO $ runEgisonTopExpr' env topExpr
         case result of
