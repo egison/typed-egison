@@ -92,6 +92,7 @@ module Language.Egison.Expressions
     , refVar
     , extendEnvImplConv
     , refEnvImplConv
+    , deleteEnvType
     -- * Pattern matching
     , Match
     , PMMode (..)
@@ -1604,6 +1605,9 @@ extendEnvImplConv e is = e { envImplConv=is++envImplConv e }
 
 refEnvImplConv :: Env -> Type -> [(Type, EgisonExpr)]
 refEnvImplConv e t = map (\(t1,t2,e) -> (t2,e)) $ filter (\(t1,_,_) -> t1 == t) $ envImplConv e
+
+deleteEnvType :: Env -> [Var] -> Env
+deleteEnvType e v = e { envType = filter (\x -> not (fst x `elem` v)) $ envType e }
 
 --
 -- Pattern Match

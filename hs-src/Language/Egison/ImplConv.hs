@@ -55,7 +55,11 @@ applyImplConv' (ApplyExpr f e) = do
   f1 <- applyImplConv' f
   e1 <- applyImplConv' e
   return $ ApplyExpr <$> f1 <*> e1
-
+applyImplConv' (LetExpr binds exp) = do
+  -- head is appended because the bug of let binds
+  let vars = map (head.fst) binds
+  exp1 <- local (\e -> deleteEnvType e vars) $ applyImplConv' exp
+  return undefined
 
 -- This helper function take a list of list and return all Cartesian product.
 -- For example, lltol [[1,2],[3,4]] ===>> [[1,3],[1,4],[2,3],[2,4]]

@@ -1,6 +1,6 @@
 {- |
 Module      : Language.Egison.Types
-Copyright   : Akira Kawata
+Copyright   : Akira KAWATA
 Licence     : MIT
 
 This module contains static type checking algorithm for Egison
