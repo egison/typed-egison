@@ -133,7 +133,8 @@ topExpr = try (Test <$> expr)
                    <|> executeExpr
                    <|> loadFileExpr
                    <|> loadExpr
-                   <|> implicitConversionExpr))
+                   <|> implicitConversionExpr
+                   <|> absoluteImplicitConversionExpr))
       <?> "top-level expression"
 
 defineExpr :: Parser TopExpr
@@ -169,7 +170,10 @@ loadExpr :: Parser TopExpr
 loadExpr = keywordLoad >> Load <$> stringLiteral
 
 implicitConversionExpr :: Parser TopExpr
-implicitConversionExpr = keywordImplicitConversion >> ImplicitConversion <$> parseType <*> parseType <*> expr
+implicitConversionExpr = keywordImplConv >> ImplicitConversion <$> parseType <*> parseType <*> expr
+
+absoluteImplicitConversionExpr :: Parser TopExpr
+absoluteImplicitConversionExpr = keywordAbsImplConv >> AbsoluteImplicitConversion <$> parseType <*> parseType <*> expr
 
 parseType :: Parser Type
 parseType = (keywordTypeBool >> return TypeBool) <|> (keywordTypeInt >> return TypeInt)
@@ -957,7 +961,8 @@ keywordSuprefsNew           = reserved "suprefs!"
 keywordUserrefs             = reserved "user-refs"
 keywordUserrefsNew          = reserved "user-refs!"
 keywordFunction             = reserved "function"
-keywordImplicitConversion   = reserved "implicit-conversion"
+keywordImplConv             = reserved "implicit-conversion"
+keywordAbsImplConv          = reserved "absolute-implicit-conversion"
 keywordTypeBool             = reserved "type-bool"
 keywordTypeInt              = reserved "type-int"
 

@@ -74,18 +74,25 @@ import Language.Egison.Parser
 -- Evaluator
 --
 
+collectImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
+collectImplicitConversion [] = []
+collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
+collectImplicitConversion (_:rest) = collectImplicitConversion rest
+
+
+collectAbsImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
+collectAbsImplicitConversion [] = []
+collectAbsImplicitConversion ((AbsoluteImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
+collectAbsImplicitConversion (_:rest) = collectImplicitConversion rest
+
 evalTopExprs :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprs env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  let env1 = extendEnvImplConv env $ collectImplicitConversion exprs
+  let env1 = extendEnvAbsImplConv (extendEnvImplConv env $ collectImplicitConversion exprs) (collectAbsImplicitConversion exprs)
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
     where
-      collectImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
-      collectImplicitConversion [] = []
-      collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
-      collectImplicitConversion (_:rest) = collectImplicitConversion rest
       collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
       collectDefs (expr:exprs) bindings rest =
         case expr of
@@ -103,15 +110,11 @@ evalTopExprs env exprs = do
 evalTopExprsTestOnly :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprsTestOnly env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  let env1 = extendEnvImplConv env $ collectImplicitConversion exprs
+  let env1 = extendEnvAbsImplConv (extendEnvImplConv env $ collectImplicitConversion exprs) (collectAbsImplicitConversion exprs)
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
  where
-      collectImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
-      collectImplicitConversion [] = []
-      collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
-      collectImplicitConversion (_:rest) = collectImplicitConversion rest
       collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
       collectDefs (expr:exprs) bindings rest =
         case expr of
@@ -130,15 +133,11 @@ evalTopExprsTestOnly env exprs = do
 evalTopExprsNoIO :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprsNoIO env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  let env1 = extendEnvImplConv env $ collectImplicitConversion exprs
+  let env1 = extendEnvAbsImplConv (extendEnvImplConv env $ collectImplicitConversion exprs) (collectAbsImplicitConversion exprs)
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
  where
-      collectImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
-      collectImplicitConversion [] = []
-      collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
-      collectImplicitConversion (_:rest) = collectImplicitConversion rest
       collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
       collectDefs (expr:exprs) bindings rest =
         case expr of
@@ -170,6 +169,7 @@ evalTopExpr' env (Execute expr) = do
 evalTopExpr' env (Load file) = loadLibraryFile file >>= evalTopExprs env >>= return . ((,) Nothing)
 evalTopExpr' env (LoadFile file) = loadFile file >>= evalTopExprs env >>= return . ((,) Nothing)
 evalTopExpr' env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv env [(t1,t2,e)])
+evalTopExpr' env (AbsoluteImplicitConversion t1 t2 e) = return (Nothing, extendEnvAbsImplConv env [(t1,t2,e)])
 
 evalExpr :: Env -> Expr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c

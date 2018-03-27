@@ -13,7 +13,7 @@ module Language.Egison.ImplConv(
   )where
 
 import qualified Language.Egison.Expressions as EE
-import Language.Egison.Expressions (Type(..), Expr(..), TopExpr(..), Env, refEnvImplConv, deleteEnvType)
+import Language.Egison.Expressions (Type(..), Expr(..), TopExpr(..), Env, refEnvImplConv, refEnvAbsImplConv, deleteEnvType)
 import Language.Egison.Types (innersToExprs)
 import Control.Monad.Reader (Reader, ask, local, runReader)
 
@@ -92,4 +92,7 @@ applyImplConv'' :: Expr -> Type -> Reader Env [Expr]
 applyImplConv'' e t = do
   env <- ask
   let ics = refEnvImplConv env t
-  return $ e : map (\(t,f) -> (ApplyExpr f e)) ics
+  let aics = refEnvAbsImplConv env t
+  if aics /= []
+    then return $ map (\(t,f) -> (ApplyExpr f e)) aics
+    else return $ e : map (\(t,f) -> (ApplyExpr f e)) ics

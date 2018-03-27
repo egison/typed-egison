@@ -93,6 +93,8 @@ module Language.Egison.Expressions
     , extendEnvImplConv
     , refEnvImplConv
     , deleteEnvType
+    , extendEnvAbsImplConv
+    , refEnvAbsImplConv
     -- * Pattern matching
     , Match
     , PMMode (..)
@@ -220,6 +222,7 @@ data TopExpr =
   | LoadFile String
   | Load String
   | ImplicitConversion Type Type Expr
+  | AbsoluteImplicitConversion Type Type Expr
  deriving (Show, Eq)
 
 data Expr =
@@ -1528,7 +1531,7 @@ class (EgisonWHNF a) => EgisonObject a where
 -- Environment
 --
 
-data Env = Env { envExpr::[HashMap Var ObjectRef], envType::[(Var, Type)], envImplConv::[(Type, Type, Expr)] }
+data Env = Env { envExpr::[HashMap Var ObjectRef], envType::[(Var, Type)], envImplConv::[(Type, Type, Expr)], envAbsImplConv::[(Type, Type, Expr)] }
  deriving (Show)
 
 newtype Var = Var [String]
@@ -1592,7 +1595,7 @@ instance Show (Index EgisonValue) where
                          _ -> "|" ++ show i
 
 nullEnv :: Env
-nullEnv = Env { envExpr = [], envType = [], envImplConv = [] }
+nullEnv = Env { envExpr = [], envType = [], envImplConv = [], envAbsImplConv = [] }
 
 extendEnv :: Env -> [Binding] -> Env
 extendEnv env bind = env { envExpr=(HashMap.fromList bind):(envExpr env) }
@@ -1605,6 +1608,13 @@ extendEnvImplConv e is = e { envImplConv=is++envImplConv e }
 
 refEnvImplConv :: Env -> Type -> [(Type, Expr)]
 refEnvImplConv e t = map (\(t1,t2,e) -> (t2,e)) $ filter (\(t1,_,_) -> t1 == t) $ envImplConv e
+
+
+extendEnvAbsImplConv :: Env -> [(Type,Type,Expr)] -> Env
+extendEnvAbsImplConv e is = e { envAbsImplConv=is++envAbsImplConv e }
+
+refEnvAbsImplConv :: Env -> Type -> [(Type, Expr)]
+refEnvAbsImplConv e t = map (\(t1,t2,e) -> (t2,e)) $ filter (\(t1,_,_) -> t1 == t) $ envAbsImplConv e
 
 deleteEnvType :: Env -> [Var] -> Env
 deleteEnvType e v = e { envType = filter (\x -> not (fst x `elem` v)) $ envType e }
