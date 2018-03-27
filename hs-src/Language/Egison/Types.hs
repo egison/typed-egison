@@ -32,7 +32,7 @@ checkTopExpr :: EE.TopExpr -> Either String (Substitution, Type)
 checkTopExpr (EE.Test e) = exprToSub e
 checkTopExpr _ = return ([], TypeStar)
 
-exprToSub :: EE.EgisonExpr -> Either String (Substitution, Type)
+exprToSub :: EE.Expr -> Either String (Substitution, Type)
 exprToSub e = evalState (runExceptT $ exprToSub' [] (TypeVar 0) e) 1
 
 applySub :: Substitution -> Type -> Type
@@ -100,7 +100,7 @@ getNewTypeVarIndex = do
   put (i+1)
   return i
 
-innersToExprs :: [EE.InnerExpr] -> [EE.EgisonExpr]
+innersToExprs :: [EE.InnerExpr] -> [EE.Expr]
 innersToExprs [] = []
 innersToExprs (EE.ElementExpr e:rest) = e:(innersToExprs rest)
 innersToExprs ((EE.SubCollectionExpr (EE.CollectionExpr is)):rest) =
@@ -117,7 +117,7 @@ lookupTypeEnv e1 ((e2,t):r)
 patternToSub :: TypeEnvironment -> Type -> EE.EgisonPattern -> MakeSubstition (Substitution, Type)
 patternToSub _ _ _ = return ([], TypeStar)
 
-exprToSub' :: TypeEnvironment -> Type -> EE.EgisonExpr -> MakeSubstition (Substitution, Type)
+exprToSub' :: TypeEnvironment -> Type -> EE.Expr -> MakeSubstition (Substitution, Type)
 exprToSub' env ty (EE.CharExpr _ ) = return ([(ty,TypeChar)], TypeChar)
 exprToSub' env ty (EE.StringExpr _) = return ([(ty,TypeString)], TypeString)
 exprToSub' env ty (EE.BoolExpr _) = return ([(ty,TypeBool)], TypeBool)

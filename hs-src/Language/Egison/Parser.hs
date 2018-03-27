@@ -57,10 +57,10 @@ readTopExprs = either throwError (mapM desugarTopExpr) . parseTopExprs
 readTopExpr :: String -> EgisonM TopExpr
 readTopExpr = either throwError desugarTopExpr . parseTopExpr
 
-readExprs :: String -> EgisonM [EgisonExpr]
+readExprs :: String -> EgisonM [Expr]
 readExprs = liftEgisonM . runDesugarM . either throwError (mapM desugar) . parseExprs
 
-readExpr :: String -> EgisonM EgisonExpr
+readExpr :: String -> EgisonM Expr
 readExpr = liftEgisonM . runDesugarM . either throwError desugar . parseExpr
 
 parseTopExprs :: String -> Either EgisonError [TopExpr]
@@ -75,13 +75,13 @@ parseTopExpr = doParse $ do
   whiteSpace >> eof
   return ret
 
-parseExprs :: String -> Either EgisonError [EgisonExpr]
+parseExprs :: String -> Either EgisonError [Expr]
 parseExprs = doParse $ do
   ret <- whiteSpace >> endBy expr whiteSpace
   eof
   return ret
 
-parseExpr :: String -> Either EgisonError EgisonExpr
+parseExpr :: String -> Either EgisonError Expr
 parseExpr = doParse $ do
   ret <- whiteSpace >> expr
   whiteSpace >> eof
@@ -174,16 +174,16 @@ implicitConversionExpr = keywordImplicitConversion >> ImplicitConversion <$> par
 parseType :: Parser Type
 parseType = (keywordTypeBool >> return TypeBool) <|> (keywordTypeInt >> return TypeInt)
 
-exprs :: Parser [EgisonExpr]
+exprs :: Parser [Expr]
 exprs = endBy expr whiteSpace
 
-expr :: Parser EgisonExpr
+expr :: Parser Expr
 expr = P.lexeme lexer (do expr0 <- expr' <|> quoteExpr'
                           expr1 <- option expr0 $ try (do string "..."
                                                           IndexedExpr False expr0 <$> parseindex)
                                                   <|> IndexedExpr True expr0 <$> parseindex
                           option expr1 $ PowerExpr expr1 <$> (try $ char '^' >> expr'))
-                            where parseindex :: Parser [Index EgisonExpr]
+                            where parseindex :: Parser [Index Expr]
                                   parseindex = many1 (try (do
                                                                char '_' 
                                                                e1 <- expr'
@@ -201,10 +201,10 @@ expr = P.lexeme lexer (do expr0 <- expr' <|> quoteExpr'
                                                  <|> try (string "~_" >> expr' >>= return . SupSubscript))
 
 
-quoteExpr' :: Parser EgisonExpr
+quoteExpr' :: Parser Expr
 quoteExpr' = char '\'' >> QuoteExpr <$> expr'
 
-expr' :: Parser EgisonExpr
+expr' :: Parser Expr
 expr' = (try partialExpr
              <|> try constantExpr
              <|> try partialVarExpr
@@ -267,82 +267,82 @@ expr' = (try partialExpr
                          )
              <?> "expression")
 
-varExpr :: Parser EgisonExpr
+varExpr :: Parser Expr
 varExpr = VarExpr <$> identVar
 
-freshVarExpr :: Parser EgisonExpr
+freshVarExpr :: Parser Expr
 freshVarExpr = char '#' >> return FreshVarExpr
 
-inductiveDataExpr :: Parser EgisonExpr
+inductiveDataExpr :: Parser Expr
 inductiveDataExpr = angles $ InductiveDataExpr <$> upperName <*> sepEndBy expr whiteSpace
 
-tupleExpr :: Parser EgisonExpr
+tupleExpr :: Parser Expr
 tupleExpr = brackets $ TupleExpr <$> sepEndBy expr whiteSpace
 
-collectionExpr :: Parser EgisonExpr
+collectionExpr :: Parser Expr
 collectionExpr = braces $ CollectionExpr <$> sepEndBy innerExpr whiteSpace
  where
   innerExpr :: Parser InnerExpr
   innerExpr = (char '@' >> SubCollectionExpr <$> expr)
                <|> ElementExpr <$> expr
 
-arrayExpr :: Parser EgisonExpr
+arrayExpr :: Parser Expr
 arrayExpr = between lp rp $ ArrayExpr <$> sepEndBy expr whiteSpace
   where
     lp = P.lexeme lexer (string "(|")
     rp = string "|)"
 
-vectorExpr :: Parser EgisonExpr
+vectorExpr :: Parser Expr
 vectorExpr = between lp rp $ VectorExpr <$> sepEndBy expr whiteSpace
   where
     lp = P.lexeme lexer (string "[|")
     rp = string "|]"
 
-hashExpr :: Parser EgisonExpr
+hashExpr :: Parser Expr
 hashExpr = between lp rp $ HashExpr <$> sepEndBy pairExpr whiteSpace
   where
     lp = P.lexeme lexer (string "{|")
     rp = string "|}"
-    pairExpr :: Parser (EgisonExpr, EgisonExpr)
+    pairExpr :: Parser (Expr, Expr)
     pairExpr = brackets $ (,) <$> expr <*> expr
 
-quoteExpr :: Parser EgisonExpr
+quoteExpr :: Parser Expr
 quoteExpr = char '\'' >> QuoteExpr <$> expr
 
-wedgeExpr :: Parser EgisonExpr
+wedgeExpr :: Parser Expr
 wedgeExpr = char '!' >> WedgeExpr <$> expr
 
-functionWithArgExpr :: Parser EgisonExpr
+functionWithArgExpr :: Parser Expr
 functionWithArgExpr = keywordFunction >> (between lp rp $ FunctionExpr <$> sepEndBy expr whiteSpace)
   where
     lp = P.lexeme lexer (char '[')
     rp = char ']'
 
-quoteFunctionExpr :: Parser EgisonExpr
+quoteFunctionExpr :: Parser Expr
 quoteFunctionExpr = char '`' >> QuoteFunctionExpr <$> expr
 
-matchAllExpr :: Parser EgisonExpr
+matchAllExpr :: Parser Expr
 matchAllExpr = keywordMatchAll >> MatchAllExpr <$> expr <*> expr <*> matchClause
 
-matchExpr :: Parser EgisonExpr
+matchExpr :: Parser Expr
 matchExpr = keywordMatch >> MatchExpr <$> expr <*> expr <*> matchClauses
 
-matchAllLambdaExpr :: Parser EgisonExpr
+matchAllLambdaExpr :: Parser Expr
 matchAllLambdaExpr = keywordMatchAllLambda >> MatchAllLambdaExpr <$> expr <*> matchClause
 
-matchLambdaExpr :: Parser EgisonExpr
+matchLambdaExpr :: Parser Expr
 matchLambdaExpr = keywordMatchLambda >> MatchLambdaExpr <$> expr <*> matchClauses
 
-nextMatchAllExpr :: Parser EgisonExpr
+nextMatchAllExpr :: Parser Expr
 nextMatchAllExpr = keywordNextMatchAll >> NextMatchAllExpr <$> expr <*> expr <*> matchClause
 
-nextMatchExpr :: Parser EgisonExpr
+nextMatchExpr :: Parser Expr
 nextMatchExpr = keywordNextMatch >> NextMatchExpr <$> expr <*> expr <*> matchClauses
 
-nextMatchAllLambdaExpr :: Parser EgisonExpr
+nextMatchAllLambdaExpr :: Parser Expr
 nextMatchAllLambdaExpr = keywordNextMatchAllLambda >> NextMatchAllLambdaExpr <$> expr <*> matchClause
 
-nextMatchLambdaExpr :: Parser EgisonExpr
+nextMatchLambdaExpr :: Parser Expr
 nextMatchLambdaExpr = keywordNextMatchLambda >> NextMatchLambdaExpr <$> expr <*> matchClauses
 
 matchClauses :: Parser [MatchClause]
@@ -351,25 +351,25 @@ matchClauses = braces $ sepEndBy matchClause whiteSpace
 matchClause :: Parser MatchClause
 matchClause = brackets $ (,) <$> pattern <*> expr
 
-matcherExpr :: Parser EgisonExpr
+matcherExpr :: Parser Expr
 matcherExpr = keywordMatcher >> MatcherBFSExpr <$> ppMatchClauses
 
-matcherBFSExpr :: Parser EgisonExpr
+matcherBFSExpr :: Parser Expr
 matcherBFSExpr = keywordMatcherBFS >> MatcherBFSExpr <$> ppMatchClauses
 
-matcherDFSExpr :: Parser EgisonExpr
+matcherDFSExpr :: Parser Expr
 matcherDFSExpr = keywordMatcherDFS >> MatcherDFSExpr <$> ppMatchClauses
 
 ppMatchClauses :: Parser MatcherInfo
 ppMatchClauses = braces $ sepEndBy ppMatchClause whiteSpace
 
-ppMatchClause :: Parser (PrimitivePatPattern, EgisonExpr, [(PrimitiveDataPattern, EgisonExpr)])
+ppMatchClause :: Parser (PrimitivePatPattern, Expr, [(PrimitiveDataPattern, Expr)])
 ppMatchClause = brackets $ (,,) <$> ppPattern <*> expr <*> pdMatchClauses
 
-pdMatchClauses :: Parser [(PrimitiveDataPattern, EgisonExpr)]
+pdMatchClauses :: Parser [(PrimitiveDataPattern, Expr)]
 pdMatchClauses = braces $ sepEndBy pdMatchClause whiteSpace
 
-pdMatchClause :: Parser (PrimitiveDataPattern, EgisonExpr)
+pdMatchClause :: Parser (PrimitiveDataPattern, Expr)
 pdMatchClause = brackets $ (,) <$> pdPattern <*> expr
 
 ppPattern :: Parser PrimitivePatPattern
@@ -405,49 +405,49 @@ pdPattern' = reservedOp "_" *> pure PDWildCard
                     <|> PDConstantPat <$> constantExpr
                     <?> "primitive-data-pattern"
 
-ifExpr :: Parser EgisonExpr
+ifExpr :: Parser Expr
 ifExpr = keywordIf >> IfExpr <$> expr <*> expr <*> expr
 
-lambdaExpr :: Parser EgisonExpr
+lambdaExpr :: Parser Expr
 lambdaExpr = keywordLambda >> LambdaExpr <$> argNames <*> expr
 
-memoizedLambdaExpr :: Parser EgisonExpr
+memoizedLambdaExpr :: Parser Expr
 memoizedLambdaExpr = keywordMemoizedLambda >> MemoizedLambdaExpr <$> varNames <*> expr
 
-memoizeExpr :: Parser EgisonExpr
+memoizeExpr :: Parser Expr
 memoizeExpr = keywordMemoize >> MemoizeExpr <$> memoizeFrame <*> expr
 
-memoizeFrame :: Parser [(EgisonExpr, EgisonExpr, EgisonExpr)]
+memoizeFrame :: Parser [(Expr, Expr, Expr)]
 memoizeFrame = braces $ sepEndBy memoizeBinding whiteSpace
 
-memoizeBinding :: Parser (EgisonExpr, EgisonExpr, EgisonExpr)
+memoizeBinding :: Parser (Expr, Expr, Expr)
 memoizeBinding = brackets $ (,,) <$> expr <*> expr <*> expr
 
-cambdaExpr :: Parser EgisonExpr
+cambdaExpr :: Parser Expr
 cambdaExpr = keywordCambda >> CambdaExpr <$> varName <*> expr
 
-procedureExpr :: Parser EgisonExpr
+procedureExpr :: Parser Expr
 procedureExpr = keywordProcedure >> ProcedureExpr <$> varNames <*> expr
 
-macroExpr :: Parser EgisonExpr
+macroExpr :: Parser Expr
 macroExpr = keywordMacro >> MacroExpr <$> varNames <*> expr
 
-patternFunctionExpr :: Parser EgisonExpr
+patternFunctionExpr :: Parser Expr
 patternFunctionExpr = keywordPatternFunction >> PatternFunctionExpr <$> varNames <*> pattern
 
-letRecExpr :: Parser EgisonExpr
+letRecExpr :: Parser Expr
 letRecExpr =  keywordLetRec >> LetRecExpr <$> bindings <*> expr
 
-letExpr :: Parser EgisonExpr
+letExpr :: Parser Expr
 letExpr = keywordLet >> LetExpr <$> bindings <*> expr
 
-letStarExpr :: Parser EgisonExpr
+letStarExpr :: Parser Expr
 letStarExpr = keywordLetStar >> LetStarExpr <$> bindings <*> expr
 
-withSymbolsExpr :: Parser EgisonExpr
+withSymbolsExpr :: Parser Expr
 withSymbolsExpr = keywordWithSymbols >> WithSymbolsExpr <$> (braces $ sepEndBy ident whiteSpace) <*> expr
 
-doExpr :: Parser EgisonExpr
+doExpr :: Parser Expr
 doExpr = keywordDo >> DoExpr <$> statements <*> option (ApplyExpr (VarExpr $ stringToVar "return") (TupleExpr [])) expr
 
 statements :: Parser [BindingExpr]
@@ -510,20 +510,20 @@ argName = try (char '$' >> ident >>= return . ScalarArg)
       <|> try (string "*$" >> ident >>= return . InvertedScalarArg)
       <|> try (char '%' >> ident >>= return . TensorArg)
 
-ioExpr :: Parser EgisonExpr
+ioExpr :: Parser Expr
 ioExpr = keywordIo >> IoExpr <$> expr
 
-seqExpr :: Parser EgisonExpr
+seqExpr :: Parser Expr
 seqExpr = keywordSeq >> SeqExpr <$> expr <*> expr
 
-cApplyExpr :: Parser EgisonExpr
+cApplyExpr :: Parser Expr
 cApplyExpr = (keywordCApply >> CApplyExpr <$> expr <*> expr) 
 
-applyExpr :: Parser EgisonExpr
+applyExpr :: Parser Expr
 applyExpr = (keywordApply >> ApplyExpr <$> expr <*> expr) 
              <|> applyExpr'
 
-applyExpr' :: Parser EgisonExpr
+applyExpr' :: Parser Expr
 applyExpr' = do
   func <- expr
   args <- args
@@ -557,71 +557,71 @@ applyExpr' = do
   g ((Left arg), _) = Left (':':arg)
   g ((Right _), var) = Right var
 
-partialExpr :: Parser EgisonExpr
+partialExpr :: Parser Expr
 partialExpr = PartialExpr <$> read <$> index <*> (char '#' >> expr)
  where
   index = (:) <$> satisfy (\c -> '1' <= c && c <= '9') <*> many digit
 
-partialVarExpr :: Parser EgisonExpr
+partialVarExpr :: Parser Expr
 partialVarExpr = char '%' >> PartialVarExpr <$> integerLiteral
 
-algebraicDataMatcherExpr :: Parser EgisonExpr
+algebraicDataMatcherExpr :: Parser Expr
 algebraicDataMatcherExpr = keywordAlgebraicDataMatcher
                                 >> braces (AlgebraicDataMatcherExpr <$> sepEndBy1 inductivePat' whiteSpace)
   where
-    inductivePat' :: Parser (String, [EgisonExpr])
+    inductivePat' :: Parser (String, [Expr])
     inductivePat' = angles $ (,) <$> lowerName <*> sepEndBy expr whiteSpace
 
-generateArrayExpr :: Parser EgisonExpr
+generateArrayExpr :: Parser Expr
 generateArrayExpr = keywordGenerateArray >> GenerateArrayExpr <$> expr <*> arrayRange
 
-arrayRange :: Parser (EgisonExpr, EgisonExpr)
+arrayRange :: Parser (Expr, Expr)
 arrayRange = brackets (do s <- expr
                           e <- expr
                           return (s, e))
 
-arrayBoundsExpr :: Parser EgisonExpr
+arrayBoundsExpr :: Parser Expr
 arrayBoundsExpr = keywordArrayBounds >> ArrayBoundsExpr <$> expr
 
-arrayRefExpr :: Parser EgisonExpr
+arrayRefExpr :: Parser Expr
 arrayRefExpr = keywordArrayRef >> ArrayRefExpr <$> expr <*> expr
 
-generateTensorExpr :: Parser EgisonExpr
+generateTensorExpr :: Parser Expr
 generateTensorExpr = keywordGenerateTensor >> GenerateTensorExpr <$> expr <*> expr
 
-tensorExpr :: Parser EgisonExpr
+tensorExpr :: Parser Expr
 tensorExpr = keywordTensor >> TensorExpr <$> expr <*> expr <*> option (CollectionExpr []) expr <*> option (CollectionExpr []) expr
 
-tensorContractExpr :: Parser EgisonExpr
+tensorContractExpr :: Parser Expr
 tensorContractExpr = keywordTensorContract >> TensorContractExpr <$> expr <*> expr
 
-tensorMapExpr :: Parser EgisonExpr
+tensorMapExpr :: Parser Expr
 tensorMapExpr = keywordTensorMap >> TensorMapExpr <$> expr <*> expr
 
-tensorMap2Expr :: Parser EgisonExpr
+tensorMap2Expr :: Parser Expr
 tensorMap2Expr = keywordTensorMap2 >> TensorMap2Expr <$> expr <*> expr <*> expr
 
-transposeExpr :: Parser EgisonExpr
+transposeExpr :: Parser Expr
 transposeExpr = keywordTranspose >> TransposeExpr <$> expr <*> expr
 
-parExpr :: Parser EgisonExpr
+parExpr :: Parser Expr
 parExpr = keywordPar >> ParExpr <$> expr <*> expr
 
-pseqExpr :: Parser EgisonExpr
+pseqExpr :: Parser Expr
 pseqExpr = keywordPseq >> PseqExpr <$> expr <*> expr
 
-pmapExpr :: Parser EgisonExpr
+pmapExpr :: Parser Expr
 pmapExpr = keywordPmap >> PmapExpr <$> expr <*> expr
 
-subrefsExpr :: Parser EgisonExpr
+subrefsExpr :: Parser Expr
 subrefsExpr = (keywordSubrefs >> SubrefsExpr False <$> expr <*> expr)
                <|> (keywordSubrefsNew >> SubrefsExpr True <$> expr <*> expr)
 
-suprefsExpr :: Parser EgisonExpr
+suprefsExpr :: Parser Expr
 suprefsExpr = (keywordSuprefs >> SuprefsExpr False <$> expr <*> expr)
                <|> (keywordSuprefsNew >> SuprefsExpr True <$> expr <*> expr)
 
-userrefsExpr :: Parser EgisonExpr
+userrefsExpr :: Parser Expr
 userrefsExpr = (keywordUserrefs >> UserrefsExpr False <$> expr <*> expr)
                 <|> (keywordUserrefsNew >> UserrefsExpr True <$> expr <*> expr)
 
@@ -734,7 +734,7 @@ powerPat = try (do pat1 <- pattern
 
 -- Constants
 
-constantExpr :: Parser EgisonExpr
+constantExpr :: Parser Expr
 constantExpr = stringExpr
                  <|> boolExpr
                  <|> try charExpr
@@ -744,16 +744,16 @@ constantExpr = stringExpr
                  <|> (keywordUndefined *> pure UndefinedExpr)
                  <?> "constant"
 
-charExpr :: Parser EgisonExpr
+charExpr :: Parser Expr
 charExpr = CharExpr <$> charLiteral
 
-stringExpr :: Parser EgisonExpr
+stringExpr :: Parser Expr
 stringExpr = StringExpr . T.pack <$> stringLiteral
 
-boolExpr :: Parser EgisonExpr
+boolExpr :: Parser Expr
 boolExpr = BoolExpr <$> boolLiteral
 
-floatExpr :: Parser EgisonExpr
+floatExpr :: Parser Expr
 floatExpr = do
   (x,y) <- try (do x <- floatLiteral'
                    y <- sign' <*> positiveFloatLiteral
@@ -766,7 +766,7 @@ floatExpr = do
                         return (x,0))
   return $ FloatExpr x y
 
-integerExpr :: Parser EgisonExpr
+integerExpr :: Parser Expr
 integerExpr = do
   n <- integerLiteral'
   return $ IntegerExpr n

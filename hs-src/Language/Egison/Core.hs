@@ -82,11 +82,11 @@ evalTopExprs env exprs = do
   forM_ rest $ evalTopExpr env2
   return env2
     where
-      collectImplicitConversion :: [TopExpr] -> [(Type,Type,EgisonExpr)]
+      collectImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
       collectImplicitConversion [] = []
       collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
       collectImplicitConversion (_:rest) = collectImplicitConversion rest
-      collectDefs :: [TopExpr] -> [(Var, EgisonExpr)] -> [TopExpr] -> EgisonM ([(Var, EgisonExpr)], [TopExpr])
+      collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
       collectDefs (expr:exprs) bindings rest =
         case expr of
           Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
@@ -108,11 +108,11 @@ evalTopExprsTestOnly env exprs = do
   forM_ rest $ evalTopExpr env2
   return env2
  where
-      collectImplicitConversion :: [TopExpr] -> [(Type,Type,EgisonExpr)]
+      collectImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
       collectImplicitConversion [] = []
       collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
       collectImplicitConversion (_:rest) = collectImplicitConversion rest
-      collectDefs :: [TopExpr] -> [(Var, EgisonExpr)] -> [TopExpr] -> EgisonM ([(Var, EgisonExpr)], [TopExpr])
+      collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
       collectDefs (expr:exprs) bindings rest =
         case expr of
           Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
@@ -135,11 +135,11 @@ evalTopExprsNoIO env exprs = do
   forM_ rest $ evalTopExpr env2
   return env2
  where
-      collectImplicitConversion :: [TopExpr] -> [(Type,Type,EgisonExpr)]
+      collectImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
       collectImplicitConversion [] = []
       collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
       collectImplicitConversion (_:rest) = collectImplicitConversion rest
-      collectDefs :: [TopExpr] -> [(Var, EgisonExpr)] -> [TopExpr] -> EgisonM ([(Var, EgisonExpr)], [TopExpr])
+      collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
       collectDefs (expr:exprs) bindings rest =
         case expr of
           Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
@@ -171,7 +171,7 @@ evalTopExpr' env (Load file) = loadLibraryFile file >>= evalTopExprs env >>= ret
 evalTopExpr' env (LoadFile file) = loadFile file >>= evalTopExprs env >>= return . ((,) Nothing)
 evalTopExpr' env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv env [(t1,t2,e)])
 
-evalExpr :: Env -> EgisonExpr -> EgisonM WHNFData
+evalExpr :: Env -> Expr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c
 evalExpr _ (StringExpr s) = return $ Value $ toEgison s
 evalExpr _ (BoolExpr b) = return . Value $ Bool b
@@ -425,7 +425,7 @@ evalExpr env (LetRecExpr bindings expr) =
   let bindings' = evalState (concat <$> mapM extractBindings bindings) 0
   in recursiveBind env bindings' >>= flip evalExpr expr 
  where
-  extractBindings :: BindingExpr -> State Int [(Var, EgisonExpr)]
+  extractBindings :: BindingExpr -> State Int [(Var, Expr)]
   extractBindings ([name], expr) = return [(name, expr)]
   extractBindings (names, expr) = do
     var <- genVar
@@ -758,7 +758,7 @@ evalExpr _ SomethingExpr = return $ Value Something
 evalExpr _ UndefinedExpr = return $ Value Undefined
 evalExpr _ expr = throwError $ NotImplemented ("evalExpr for " ++ show expr)
 
-evalExprDeep :: Env -> EgisonExpr -> EgisonM EgisonValue
+evalExprDeep :: Env -> Expr -> EgisonM EgisonValue
 evalExprDeep env expr = evalExpr env expr >>= evalWHNF
 
 evalRef :: ObjectRef -> EgisonM WHNFData
@@ -961,10 +961,10 @@ arrayBounds' (Intermediate (IArray arr)) = return $ Tuple [(toEgison (fst (Array
 arrayBounds' (Value (Array arr))         = return $ Tuple [(toEgison (fst (Array.bounds arr))), (toEgison (snd (Array.bounds arr)))]
 arrayBounds' val                         = throwError $ TypeMismatch "array" val
 
-newThunk :: Env -> EgisonExpr -> Object
+newThunk :: Env -> Expr -> Object
 newThunk env expr = Thunk $ evalExpr env expr
 
-newObjectRef :: Env -> EgisonExpr -> EgisonM ObjectRef
+newObjectRef :: Env -> Expr -> EgisonM ObjectRef
 newObjectRef env expr = liftIO $ newIORef $ newThunk env expr
 
 writeObjectRef :: ObjectRef -> WHNFData -> EgisonM ()
@@ -979,7 +979,7 @@ makeBindings = zip
 makeBindings' :: [String] -> [ObjectRef] -> [Binding]
 makeBindings' xs = zip (map stringToVar xs)
 
-recursiveBind :: Env -> [(Var, EgisonExpr)] -> EgisonM Env
+recursiveBind :: Env -> [(Var, Expr)] -> EgisonM Env
 recursiveBind env bindings = do
   let (names, exprs) = unzip bindings
   refs <- replicateM (length bindings) $ newObjectRef nullEnv UndefinedExpr
@@ -1001,7 +1001,7 @@ recursiveBind env bindings = do
             refs bindings
   return env'
 
-recursiveRebind :: Env -> (Var, EgisonExpr) -> EgisonM Env
+recursiveRebind :: Env -> (Var, Expr) -> EgisonM Env
 recursiveRebind env (name, expr) = do
   case refVar env name of
     Nothing -> throwError $ UnboundVariable $ show name

@@ -43,7 +43,7 @@ version :: Version
 version = P.version
 
 -- |eval an Egison expression
-evalEgisonExpr :: Env -> EgisonExpr -> IO (Either EgisonError EgisonValue)
+evalEgisonExpr :: Env -> Expr -> IO (Either EgisonError EgisonValue)
 evalEgisonExpr env expr = fromEgisonM $ evalExprDeep env expr
 
 -- |eval an Egison top expression

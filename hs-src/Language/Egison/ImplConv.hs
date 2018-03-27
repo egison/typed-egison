@@ -13,19 +13,19 @@ module Language.Egison.ImplConv(
   )where
 
 import qualified Language.Egison.Expressions as EE
-import Language.Egison.Expressions (Type(..), EgisonExpr(..), TopExpr(..), Env, refEnvImplConv, deleteEnvType)
+import Language.Egison.Expressions (Type(..), Expr(..), TopExpr(..), Env, refEnvImplConv, deleteEnvType)
 import Language.Egison.Types (innersToExprs)
 import Control.Monad.Reader (Reader, ask, local, runReader)
 
-implConvTopExpr :: Env -> TopExpr -> [EgisonExpr]
+implConvTopExpr :: Env -> TopExpr -> [Expr]
 implConvTopExpr env exp = case exp of
   Test e -> applyImplConv env e
   _ -> []
 
-applyImplConv :: Env -> EgisonExpr -> [EgisonExpr]
+applyImplConv :: Env -> Expr -> [Expr]
 applyImplConv env exp = runReader (applyImplConv' exp) env
 
-applyImplConv' :: EgisonExpr -> Reader Env [EgisonExpr]
+applyImplConv' :: Expr -> Reader Env [Expr]
 applyImplConv' e@(CharExpr _) = applyImplConv'' e TypeChar
 applyImplConv' e@(StringExpr _) = applyImplConv'' e TypeString
 applyImplConv' e@(BoolExpr _) = applyImplConv'' e TypeBool
@@ -88,7 +88,7 @@ cartesian (l:rest) = do
   return (a:as)
 
 
-applyImplConv'' :: EgisonExpr -> Type -> Reader Env [EgisonExpr]
+applyImplConv'' :: Expr -> Type -> Reader Env [Expr]
 applyImplConv'' e t = do
   env <- ask
   let ics = refEnvImplConv env t
