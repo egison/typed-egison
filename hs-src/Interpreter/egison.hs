@@ -245,6 +245,9 @@ repl noIOFlag mathExprLang env prompt = do
     
   loop :: Env -> IO ()
   loop env = (do 
+    -- show Env for debug
+    print env
+    -- show Env for debug
     home <- getHomeDirectory
     input <- liftIO $ runInputT (settings home) $ getEgisonExpr prompt
     case (noIOFlag, input) of
@@ -262,9 +265,6 @@ repl noIOFlag mathExprLang env prompt = do
         let tc = ast >>= (return . TC.checkTopExpr)
         print tc
         -- show AST for debug
-        -- show Env for debug
-        print env
-        -- show Env for debug
         result <- liftIO $ runEgisonTopExpr' env topExpr
         case result of
           Left err -> do
