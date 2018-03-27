@@ -51,10 +51,10 @@ import Language.Egison.Expressions
 import Language.Egison.Desugar
 import Paths_egison (getDataFileName)
 
-readTopExprs :: String -> EgisonM [EgisonTopExpr]
+readTopExprs :: String -> EgisonM [TopExpr]
 readTopExprs = either throwError (mapM desugarTopExpr) . parseTopExprs
 
-readTopExpr :: String -> EgisonM EgisonTopExpr
+readTopExpr :: String -> EgisonM TopExpr
 readTopExpr = either throwError desugarTopExpr . parseTopExpr
 
 readExprs :: String -> EgisonM [EgisonExpr]
@@ -63,13 +63,13 @@ readExprs = liftEgisonM . runDesugarM . either throwError (mapM desugar) . parse
 readExpr :: String -> EgisonM EgisonExpr
 readExpr = liftEgisonM . runDesugarM . either throwError desugar . parseExpr
 
-parseTopExprs :: String -> Either EgisonError [EgisonTopExpr]
+parseTopExprs :: String -> Either EgisonError [TopExpr]
 parseTopExprs = doParse $ do
   ret <- whiteSpace >> endBy topExpr whiteSpace
   eof
   return ret
 
-parseTopExpr :: String -> Either EgisonError EgisonTopExpr
+parseTopExpr :: String -> Either EgisonError TopExpr
 parseTopExpr = doParse $ do
   ret <- whiteSpace >> topExpr
   whiteSpace >> eof
@@ -88,7 +88,7 @@ parseExpr = doParse $ do
   return ret
 
 -- |Load a libary file
-loadLibraryFile :: FilePath -> EgisonM [EgisonTopExpr]
+loadLibraryFile :: FilePath -> EgisonM [TopExpr]
 loadLibraryFile file = do
   homeDir <- liftIO $ getHomeDirectory
   doesExist <- liftIO $ doesFileExist $ homeDir ++ "/.egison/" ++ file
@@ -97,7 +97,7 @@ loadLibraryFile file = do
     else liftIO (getDataFileName file) >>= loadFile
 
 -- |Load a file
-loadFile :: FilePath -> EgisonM [EgisonTopExpr]
+loadFile :: FilePath -> EgisonM [TopExpr]
 loadFile file = do
   doesExist <- liftIO $ doesFileExist file
   unless doesExist $ throwError $ Default ("file does not exist: " ++ file)
@@ -125,7 +125,7 @@ doParse p input = either (throwError . fromParsecError) return $ parse p "egison
 --
 -- Expressions
 --
-topExpr :: Parser EgisonTopExpr
+topExpr :: Parser TopExpr
 topExpr = try (Test <$> expr)
       <|> try defineExpr
       <|> try (parens (redefineExpr
@@ -136,7 +136,7 @@ topExpr = try (Test <$> expr)
                    <|> implicitConversionExpr))
       <?> "top-level expression"
 
-defineExpr :: Parser EgisonTopExpr
+defineExpr :: Parser TopExpr
 defineExpr = try (parens (keywordDefine >> Define <$> varNameWithIndexType <*> expr))
          <|> try (parens (do keywordDefine
                              (VarWithIndices name is) <- varNameWithIndices
@@ -153,22 +153,22 @@ defineExpr = try (parens (keywordDefine >> Define <$> varNameWithIndexType <*> e
   h (Subscript i) = (VarExpr $ stringToVar i)
   h (SupSubscript i) = (VarExpr $ stringToVar i)
 
-redefineExpr :: Parser EgisonTopExpr
+redefineExpr :: Parser TopExpr
 redefineExpr = (keywordRedefine <|> keywordSet) >> Redefine <$> varNameWithIndexType <*> expr
 
-testExpr :: Parser EgisonTopExpr
+testExpr :: Parser TopExpr
 testExpr = keywordTest >> Test <$> expr
 
-executeExpr :: Parser EgisonTopExpr
+executeExpr :: Parser TopExpr
 executeExpr = keywordExecute >> Execute <$> expr
 
-loadFileExpr :: Parser EgisonTopExpr
+loadFileExpr :: Parser TopExpr
 loadFileExpr = keywordLoadFile >> LoadFile <$> stringLiteral
 
-loadExpr :: Parser EgisonTopExpr
+loadExpr :: Parser TopExpr
 loadExpr = keywordLoad >> Load <$> stringLiteral
 
-implicitConversionExpr :: Parser EgisonTopExpr
+implicitConversionExpr :: Parser TopExpr
 implicitConversionExpr = keywordImplicitConversion >> ImplicitConversion <$> parseType <*> parseType <*> expr
 
 parseType :: Parser Type

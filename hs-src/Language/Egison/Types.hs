@@ -18,7 +18,7 @@ import Control.Monad.State (State,evalState,get,put)
 import Control.Monad.Trans.Except (ExceptT,runExceptT,catchE)
 import Control.Monad.Except(throwError)
 import Data.Maybe (fromMaybe)
-import Data.List(nub)
+import Data.List (nub)
 
 -- First element of Restriction will be type valiable.
 -- Second element of Restriction is what the first element refer.
@@ -28,7 +28,7 @@ type Substitution = [Restriction]
 type TypeEnvironment = [([String],Type)]
 type MakeSubstition = ExceptT String (State TypeVarIndex)
 
-checkTopExpr :: EE.EgisonTopExpr -> Either String (Substitution, Type)
+checkTopExpr :: EE.TopExpr -> Either String (Substitution, Type)
 checkTopExpr (EE.Test e) = exprToSub e
 checkTopExpr _ = return ([], TypeStar)
 

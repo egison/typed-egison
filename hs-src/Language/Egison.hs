@@ -47,15 +47,15 @@ evalEgisonExpr :: Env -> EgisonExpr -> IO (Either EgisonError EgisonValue)
 evalEgisonExpr env expr = fromEgisonM $ evalExprDeep env expr
 
 -- |eval an Egison top expression
-evalEgisonTopExpr :: Env -> EgisonTopExpr -> IO (Either EgisonError Env)
+evalEgisonTopExpr :: Env -> TopExpr -> IO (Either EgisonError Env)
 evalEgisonTopExpr env exprs = fromEgisonM $ evalTopExpr env exprs
 
 -- |eval Egison top expressions
-evalEgisonTopExprs :: Env -> [EgisonTopExpr] -> IO (Either EgisonError Env)
+evalEgisonTopExprs :: Env -> [TopExpr] -> IO (Either EgisonError Env)
 evalEgisonTopExprs env exprs = fromEgisonM $ evalTopExprs env exprs
 
 -- |eval Egison top expressions and execute test expressions
-evalEgisonTopExprsTestOnly :: Env -> [EgisonTopExpr] -> IO (Either EgisonError Env)
+evalEgisonTopExprsTestOnly :: Env -> [TopExpr] -> IO (Either EgisonError Env)
 evalEgisonTopExprsTestOnly env exprs = fromEgisonM $ evalTopExprsTestOnly env exprs
 
 -- |eval an Egison expression. Input is a Haskell string.

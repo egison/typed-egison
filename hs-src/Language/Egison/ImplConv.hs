@@ -13,11 +13,11 @@ module Language.Egison.ImplConv(
   )where
 
 import qualified Language.Egison.Expressions as EE
-import Language.Egison.Expressions (Type(..), EgisonExpr(..), EgisonTopExpr(..), Env, refEnvImplConv, deleteEnvType)
+import Language.Egison.Expressions (Type(..), EgisonExpr(..), TopExpr(..), Env, refEnvImplConv, deleteEnvType)
 import Language.Egison.Types (innersToExprs)
 import Control.Monad.Reader (Reader, ask, local, runReader)
 
-implConvTopExpr :: Env -> EgisonTopExpr -> [EgisonExpr]
+implConvTopExpr :: Env -> TopExpr -> [EgisonExpr]
 implConvTopExpr env exp = case exp of
   Test e -> applyImplConv env e
   _ -> []

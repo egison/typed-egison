@@ -37,7 +37,7 @@ newtype DesugarM a = DesugarM { unDesugarM :: ReaderT Subst (ExceptT EgisonError
 runDesugarM :: DesugarM a -> Fresh (Either EgisonError a)
 runDesugarM = runExceptT . flip runReaderT [] . unDesugarM
 
-desugarTopExpr :: EgisonTopExpr -> EgisonM EgisonTopExpr
+desugarTopExpr :: TopExpr -> EgisonM TopExpr
 desugarTopExpr (Define name expr) = do
   expr' <- liftEgisonM $ runDesugarM $ desugar expr
   return (Define name expr')

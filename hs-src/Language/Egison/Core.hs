@@ -74,7 +74,7 @@ import Language.Egison.Parser
 -- Evaluator
 --
 
-evalTopExprs :: Env -> [EgisonTopExpr] -> EgisonM Env
+evalTopExprs :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprs env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
   let env1 = extendEnvImplConv env $ collectImplicitConversion exprs
@@ -82,11 +82,11 @@ evalTopExprs env exprs = do
   forM_ rest $ evalTopExpr env2
   return env2
     where
-      collectImplicitConversion :: [EgisonTopExpr] -> [(Type,Type,EgisonExpr)]
+      collectImplicitConversion :: [TopExpr] -> [(Type,Type,EgisonExpr)]
       collectImplicitConversion [] = []
       collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
       collectImplicitConversion (_:rest) = collectImplicitConversion rest
-      collectDefs :: [EgisonTopExpr] -> [(Var, EgisonExpr)] -> [EgisonTopExpr] -> EgisonM ([(Var, EgisonExpr)], [EgisonTopExpr])
+      collectDefs :: [TopExpr] -> [(Var, EgisonExpr)] -> [TopExpr] -> EgisonM ([(Var, EgisonExpr)], [TopExpr])
       collectDefs (expr:exprs) bindings rest =
         case expr of
           Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
@@ -100,7 +100,7 @@ evalTopExprs env exprs = do
           _ -> collectDefs exprs bindings rest
       collectDefs [] bindings rest = return (bindings, reverse rest)
 
-evalTopExprsTestOnly :: Env -> [EgisonTopExpr] -> EgisonM Env
+evalTopExprsTestOnly :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprsTestOnly env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
   let env1 = extendEnvImplConv env $ collectImplicitConversion exprs
@@ -108,11 +108,11 @@ evalTopExprsTestOnly env exprs = do
   forM_ rest $ evalTopExpr env2
   return env2
  where
-      collectImplicitConversion :: [EgisonTopExpr] -> [(Type,Type,EgisonExpr)]
+      collectImplicitConversion :: [TopExpr] -> [(Type,Type,EgisonExpr)]
       collectImplicitConversion [] = []
       collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
       collectImplicitConversion (_:rest) = collectImplicitConversion rest
-      collectDefs :: [EgisonTopExpr] -> [(Var, EgisonExpr)] -> [EgisonTopExpr] -> EgisonM ([(Var, EgisonExpr)], [EgisonTopExpr])
+      collectDefs :: [TopExpr] -> [(Var, EgisonExpr)] -> [TopExpr] -> EgisonM ([(Var, EgisonExpr)], [TopExpr])
       collectDefs (expr:exprs) bindings rest =
         case expr of
           Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
@@ -127,7 +127,7 @@ evalTopExprsTestOnly env exprs = do
           _ -> collectDefs exprs bindings rest
       collectDefs [] bindings rest = return (bindings, reverse rest)
 
-evalTopExprsNoIO :: Env -> [EgisonTopExpr] -> EgisonM Env
+evalTopExprsNoIO :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprsNoIO env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
   let env1 = extendEnvImplConv env $ collectImplicitConversion exprs
@@ -135,11 +135,11 @@ evalTopExprsNoIO env exprs = do
   forM_ rest $ evalTopExpr env2
   return env2
  where
-      collectImplicitConversion :: [EgisonTopExpr] -> [(Type,Type,EgisonExpr)]
+      collectImplicitConversion :: [TopExpr] -> [(Type,Type,EgisonExpr)]
       collectImplicitConversion [] = []
       collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
       collectImplicitConversion (_:rest) = collectImplicitConversion rest
-      collectDefs :: [EgisonTopExpr] -> [(Var, EgisonExpr)] -> [EgisonTopExpr] -> EgisonM ([(Var, EgisonExpr)], [EgisonTopExpr])
+      collectDefs :: [TopExpr] -> [(Var, EgisonExpr)] -> [TopExpr] -> EgisonM ([(Var, EgisonExpr)], [TopExpr])
       collectDefs (expr:exprs) bindings rest =
         case expr of
           Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
@@ -148,7 +148,7 @@ evalTopExprsNoIO env exprs = do
           _ -> collectDefs exprs bindings (expr : rest)
       collectDefs [] bindings rest = return (bindings, reverse rest)
 
-evalTopExpr :: Env -> EgisonTopExpr -> EgisonM Env
+evalTopExpr :: Env -> TopExpr -> EgisonM Env
 evalTopExpr env topExpr = do
   ret <- evalTopExpr' env topExpr
   case fst ret of
@@ -156,7 +156,7 @@ evalTopExpr env topExpr = do
     Just output -> liftIO $ putStrLn output
   return $ snd ret
 
-evalTopExpr' :: Env -> EgisonTopExpr -> EgisonM (Maybe String, Env)
+evalTopExpr' :: Env -> TopExpr -> EgisonM (Maybe String, Env)
 evalTopExpr' env (Define name expr) = recursiveBind env [((stringToVar $ show name), expr)] >>= return . ((,) Nothing)
 evalTopExpr' env (Redefine name expr) = recursiveRebind env ((stringToVar $ show name), expr) >>= return . ((,) Nothing)
 evalTopExpr' env (Test expr) = do

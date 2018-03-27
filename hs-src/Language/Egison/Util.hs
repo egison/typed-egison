@@ -17,10 +17,10 @@ import Language.Egison.Expressions
 import Language.Egison.Parser
 
 -- |Get Egison expression from the prompt. We can handle multiline input.
-getEgisonExpr :: String -> InputT IO (Maybe (String, EgisonTopExpr))
+getEgisonExpr :: String -> InputT IO (Maybe (String, TopExpr))
 getEgisonExpr prompt = getEgisonExpr' prompt ""
 
-getEgisonExpr' :: String -> String -> InputT IO (Maybe (String, EgisonTopExpr))
+getEgisonExpr' :: String -> String -> InputT IO (Maybe (String, TopExpr))
 getEgisonExpr' prompt prev = do
   mLine <- case prev of
              "" -> getInputLine prompt
@@ -42,10 +42,10 @@ getEgisonExpr' prompt prev = do
         Right topExpr -> return $ Just (input, topExpr)
 
 -- |Get Egison expression from the prompt. We can handle multiline input.
-getEgisonExprOrNewLine :: String -> InputT IO (Either (Maybe String) (String, EgisonTopExpr))
+getEgisonExprOrNewLine :: String -> InputT IO (Either (Maybe String) (String, TopExpr))
 getEgisonExprOrNewLine prompt = getEgisonExprOrNewLine' prompt ""
 
-getEgisonExprOrNewLine' :: String -> String -> InputT IO (Either (Maybe String) (String, EgisonTopExpr))
+getEgisonExprOrNewLine' :: String -> String -> InputT IO (Either (Maybe String) (String, TopExpr))
 getEgisonExprOrNewLine' prompt prev = do
   mLine <- case prev of
              "" -> getInputLine prompt

@@ -12,7 +12,7 @@ This module contains type definitions of Egison Data.
 module Language.Egison.Expressions
     (
     -- * Egison expressions
-      EgisonTopExpr (..)
+      TopExpr (..)
     , EgisonExpr (..)
     , EgisonPattern (..)
     , Arg (..)
@@ -211,7 +211,7 @@ type TypeVarIndex = Int
 -- Expressions
 --
 
-data EgisonTopExpr =
+data TopExpr =
     Define VarWithIndexType EgisonExpr
   | Redefine VarWithIndexType EgisonExpr
   | Test EgisonExpr
