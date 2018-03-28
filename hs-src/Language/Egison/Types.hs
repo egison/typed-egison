@@ -25,7 +25,7 @@ import Data.List (nub)
 type Restriction = (Type,Type) 
 type Substitution = [Restriction]
 -- [(Variable name, Type)]
-type TypeEnvironment = [([String],Type)]
+type TypeEnvironment = [(EE.Var,Type)]
 type MakeSubstition = ExceptT String (State TypeVarIndex)
 
 checkTopExpr :: EE.TopExpr -> Either String (Substitution, Type)
@@ -106,7 +106,7 @@ innersToExprs (EE.ElementExpr e:rest) = e:(innersToExprs rest)
 innersToExprs ((EE.SubCollectionExpr (EE.CollectionExpr is)):rest) =
     innersToExprs is ++ innersToExprs rest
 
-lookupTypeEnv :: [String] -> TypeEnvironment -> MakeSubstition Type
+lookupTypeEnv :: EE.Var -> TypeEnvironment -> MakeSubstition Type
 lookupTypeEnv e [] = do
   i <- getNewTypeVarIndex
   return $ (TypeVar i)
@@ -114,15 +114,24 @@ lookupTypeEnv e1 ((e2,t):r)
   | e1 == e2 = return t
   | otherwise = lookupTypeEnv e1 r
 
-patternToSub :: TypeEnvironment -> Type -> EE.EgisonPattern -> MakeSubstition (Substitution, Type)
-patternToSub _ _ _ = return ([], TypeStar)
+patternToSub :: TypeEnvironment -> Type -> EE.EgisonPattern -> MakeSubstition (Substitution, TypeEnvironment, Type)
+patternToSub env (TypePattern ty) (EE.ValuePat exp) = do
+  (sub1, ty1) <- exprToSub' env ty exp
+  sub2 <- unifySub $ (ty,ty1) : sub1
+  return (sub2, env, applySub sub2 (TypePattern ty1))
+patternToSub env (TypePattern ty) (EE.PatVar var) = do
+  tvi <- getNewTypeVarIndex
+  let env1 = (var,TypeVar tvi) : env
+  let sub = [(ty, TypeVar tvi)]
+  return (sub, env1, applySub sub (TypePattern ty))
+patternToSub _ _ _ = return ([], [], TypeStar)
 
 exprToSub' :: TypeEnvironment -> Type -> EE.Expr -> MakeSubstition (Substitution, Type)
 exprToSub' env ty (EE.CharExpr _ ) = return ([(ty,TypeChar)], TypeChar)
 exprToSub' env ty (EE.StringExpr _) = return ([(ty,TypeString)], TypeString)
 exprToSub' env ty (EE.BoolExpr _) = return ([(ty,TypeBool)], TypeBool)
 exprToSub' env ty (EE.IntegerExpr _) = return ([(ty,TypeInt)], TypeInt)
-exprToSub' env ty (EE.VarExpr (EE.Var vn)) = do
+exprToSub' env ty (EE.VarExpr vn) = do
     ty' <- lookupTypeEnv vn env
     sub <- unifySub [(ty',ty)]
     return (sub, applySub sub ty')
@@ -136,30 +145,31 @@ exprToSub' env ty (EE.IfExpr e1 e2 e3) = do
     sub5 <- catchE (unifySub $ (t2, t3) : sub4 ++ sub2 ++ sub3) ct
     return (sub5, applySub sub5 t2)
 exprToSub' env ty (EE.TupleExpr es) = do
-    sts <- mapM (exprToSub' env TypeStar) es
-    let ty' = TypeTuple (map snd sts)
-    sub <- unifySub $ (ty, ty') : (foldr (++) [] (map fst sts))
-    return (sub, applySub sub ty')
+    tvs <- mapM (\x -> do{ i<-getNewTypeVarIndex; return (TypeVar i)}) es
+    sts <- mapM (\(e,tv) -> exprToSub' env tv e) $ zip es tvs
+    let ty1 = TypeTuple (map snd sts)
+    sub <- unifySub $ (ty, ty1) : (ty,TypeTuple tvs) : (foldr (++) [] (map fst sts))
+    return (sub, applySub sub ty1)
 exprToSub' env ty (EE.CollectionExpr es) = do
+    ty1 <- do{ i<-getNewTypeVarIndex; return $ TypeVar i }
     let es' = innersToExprs es
-    sts <- mapM (exprToSub' env TypeStar) es'
+    sts <- mapM (exprToSub' env ty1) es'
     let sub1 = foldr (++) [] (map fst sts)
-    tv <- getNewTypeVarIndex
-    let sub2 = map (\x -> (TypeVar tv, snd x)) sts
-    let ty' = TypeCollection (TypeVar tv)
+    ty2 <- do{ i<-getNewTypeVarIndex; return $ TypeVar i }
+    let sub2 = map (\x -> (ty2, snd x)) sts
     let cc = (\x -> throwError "The elemtents of collection do not have the same type.")
-    sub3 <- catchE (unifySub $ ((ty, ty') : sub1 ++ sub2)) cc
-    return (sub3, applySub sub3 ty')
+    sub3 <- catchE (unifySub $ ((ty, TypeCollection ty2) : (ty, TypeCollection ty1) : sub1 ++ sub2)) cc
+    return (sub3, applySub sub3 (TypeCollection ty2))
 exprToSub' env ty (EE.LambdaExpr args body) = do
-    let args1 = filter (/= []) $ map f args
+    let args1 = filter (/= EE.Var []) $ map f args
     arg1tys <- mapM (\_ -> do { x <- getNewTypeVarIndex; return (TypeVar x)}) args1
     let env1 = (zip args1 arg1tys) ++ filter (\(v,_) -> not (v `elem` args1)) env
     tv <- getNewTypeVarIndex
     (sub1,ty1) <- exprToSub' env1 (TypeVar tv) body
     sub2 <- unifySub $ (ty, TypeFun (TypeTuple arg1tys) ty1):sub1
     return (sub2, applySub sub2 ty)
-      where f (EE.TensorArg s) = [s]
-            f _ = []
+      where f (EE.TensorArg s) = EE.Var [s]
+            f _ = EE.Var []
 exprToSub' env ty (EE.ApplyExpr fun arg) = do
     tv <- getNewTypeVarIndex
     (sub1, t1) <- exprToSub' env (TypeVar tv) arg
@@ -168,7 +178,7 @@ exprToSub' env ty (EE.ApplyExpr fun arg) = do
     sub3 <- catchE (unifySub $ (t2, (TypeFun (TypeVar tv) ty)) : (t1, TypeVar tv) : sub1 ++ sub2) cc
     return (sub3, applySub sub3 ty)
 exprToSub' env ty (EE.LetExpr binds body) = do
-    let names = filter (/= []) $ map f binds
+    let names = filter (/= EE.Var []) $ map f binds
     let exs = map snd binds
     tys <- mapM (\x -> getNewTypeVarIndex >>= (return . TypeVar)) binds
     sts <- mapM (\(x,y) -> exprToSub' env x y) $ zip tys exs
@@ -178,10 +188,10 @@ exprToSub' env ty (EE.LetExpr binds body) = do
     (sub3, ty3) <- exprToSub' env1 ty body
     sub4 <- unifySub $ sub2 ++ sub3
     return (sub4, applySub sub4 ty)
-      where f (([EE.Var s],_)) = s
-            f _ = []
+      where f (([EE.Var s],_)) = EE.Var s
+            f _ = EE.Var []
 exprToSub' env ty (EE.LetRecExpr binds body) = do
-    let names = filter (/= []) $ map f binds
+    let names = filter (/= EE.Var []) $ map f binds
     let exs = map snd binds
     tys <- mapM (\x -> getNewTypeVarIndex >>= (return . TypeVar)) binds
     sts <- mapM (\(x,y) -> exprToSub' env x y) $ zip tys exs
@@ -191,16 +201,18 @@ exprToSub' env ty (EE.LetRecExpr binds body) = do
     (sub3, ty3) <- exprToSub' env1 ty body
     sub4 <- unifySub $ sub2 ++ sub3
     return (sub4, applySub sub4 ty)
-      where f (([EE.Var s],_)) = s
-            f _ = []
+      where f (([EE.Var s],_)) = EE.Var s
+            f _ = EE.Var []
 exprToSub' env ty (EE.MatchAllExpr dt mt (pt,ex)) = do
     tvdt <- getNewTypeVarIndex
     tvex <- getNewTypeVarIndex
     (sub1, ty1) <- exprToSub' env (TypeVar tvdt) dt
     (sub2, ty2) <- exprToSub' env (TypeMatcher (TypeVar tvdt)) mt
-    (sub3, ty3) <- patternToSub env (TypePattern (TypeVar tvdt)) pt
-    (sub4, ty4) <- exprToSub' env (TypeVar tvex) ex
-    sub5 <- unifySub $ (ty1, TypeVar tvdt) : (ty2,TypeMatcher (TypeVar tvdt)) : (ty4, TypeVar tvex) : (ty,TypeCollection (TypeVar tvex)) : sub1 ++ sub2 ++ sub4
+    (sub3, env1, ty3) <- patternToSub env (TypePattern (TypeVar tvdt)) pt
+    -- throwError $ show env1
+    (sub4, ty4) <- exprToSub' env1 (TypeVar tvex) ex
+    -- throwError $ show (env1,ex,ty4)
+    sub5 <- unifySub $ (ty1, TypeVar tvdt) : (ty2,TypeMatcher (TypeVar tvdt)) : (ty3,TypePattern (TypeVar tvdt)) : (ty4, TypeVar tvex) : (ty,TypeCollection (TypeVar tvex)) : sub1 ++ sub2 ++ sub3 ++ sub4
     return (sub5, applySub sub5 ty)
 exprToSub' env ty _ = return ([], TypeStar)
 
