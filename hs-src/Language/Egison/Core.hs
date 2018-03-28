@@ -85,10 +85,17 @@ collectAbsImplicitConversion [] = []
 collectAbsImplicitConversion ((AbsoluteImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
 collectAbsImplicitConversion (_:rest) = collectImplicitConversion rest
 
+collectDefineTypeOf :: [TopExpr] -> [(Var,Type)]
+collectDefineTypeOf [] = []
+collectDefineTypeOf ((DefineTypeOf v t):rest) = (v,t):collectDefineTypeOf rest
+collectDefineTypeOf (_:rest) = collectDefineTypeOf rest
+
 evalTopExprs :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprs env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  let env1 = extendEnvAbsImplConv (extendEnvImplConv env $ collectImplicitConversion exprs) (collectAbsImplicitConversion exprs)
+  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs)
+             $ extendEnvImplConv (collectImplicitConversion exprs) 
+             $ extendEnvType (collectDefineTypeOf exprs) env
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
@@ -110,7 +117,9 @@ evalTopExprs env exprs = do
 evalTopExprsTestOnly :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprsTestOnly env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  let env1 = extendEnvAbsImplConv (extendEnvImplConv env $ collectImplicitConversion exprs) (collectAbsImplicitConversion exprs)
+  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs)
+             $ extendEnvImplConv (collectImplicitConversion exprs) 
+             $ extendEnvType (collectDefineTypeOf exprs) env
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
@@ -133,7 +142,9 @@ evalTopExprsTestOnly env exprs = do
 evalTopExprsNoIO :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprsNoIO env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  let env1 = extendEnvAbsImplConv (extendEnvImplConv env $ collectImplicitConversion exprs) (collectAbsImplicitConversion exprs)
+  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs)
+             $ extendEnvImplConv (collectImplicitConversion exprs) 
+             $ extendEnvType (collectDefineTypeOf exprs) env
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
@@ -168,8 +179,9 @@ evalTopExpr' env (Execute expr) = do
     _ -> throwError $ TypeMismatch "io" io
 evalTopExpr' env (Load file) = loadLibraryFile file >>= evalTopExprs env >>= return . ((,) Nothing)
 evalTopExpr' env (LoadFile file) = loadFile file >>= evalTopExprs env >>= return . ((,) Nothing)
-evalTopExpr' env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv env [(t1,t2,e)])
-evalTopExpr' env (AbsoluteImplicitConversion t1 t2 e) = return (Nothing, extendEnvAbsImplConv env [(t1,t2,e)])
+evalTopExpr' env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv [(t1,t2,e)] env)
+evalTopExpr' env (AbsoluteImplicitConversion t1 t2 e) = return (Nothing, extendEnvAbsImplConv [(t1,t2,e)] env)
+evalTopExpr' env (DefineTypeOf v t) = return (Nothing, extendEnvType [(v,t)] env)
 
 evalExpr :: Env -> Expr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c

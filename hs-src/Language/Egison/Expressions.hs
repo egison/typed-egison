@@ -92,6 +92,7 @@ module Language.Egison.Expressions
     , refVar
     , extendEnvImplConv
     , refEnvImplConv
+    , extendEnvType
     , deleteEnvType
     , extendEnvAbsImplConv
     , refEnvAbsImplConv
@@ -223,6 +224,7 @@ data TopExpr =
   | Load String
   | ImplicitConversion Type Type Expr
   | AbsoluteImplicitConversion Type Type Expr
+  | DefineTypeOf Var Type
  deriving (Show, Eq)
 
 data Expr =
@@ -1603,21 +1605,23 @@ extendEnv env bind = env { envExpr=(HashMap.fromList bind):(envExpr env) }
 refVar :: Env -> Var -> Maybe ObjectRef
 refVar env var = msum $ map (HashMap.lookup var) (envExpr env)
 
-extendEnvImplConv :: Env -> [(Type,Type,Expr)] -> Env
-extendEnvImplConv e is = e { envImplConv=is++envImplConv e }
+extendEnvImplConv :: [(Type,Type,Expr)] -> Env -> Env
+extendEnvImplConv is e = e { envImplConv=is++envImplConv e }
 
 refEnvImplConv :: Env -> Type -> [(Type, Expr)]
 refEnvImplConv e t = map (\(t1,t2,e) -> (t2,e)) $ filter (\(t1,_,_) -> t1 == t) $ envImplConv e
 
-
-extendEnvAbsImplConv :: Env -> [(Type,Type,Expr)] -> Env
-extendEnvAbsImplConv e is = e { envAbsImplConv=is++envAbsImplConv e }
+extendEnvAbsImplConv :: [(Type,Type,Expr)] -> Env -> Env
+extendEnvAbsImplConv is e = e { envAbsImplConv=is++envAbsImplConv e }
 
 refEnvAbsImplConv :: Env -> Type -> [(Type, Expr)]
 refEnvAbsImplConv e t = map (\(t1,t2,e) -> (t2,e)) $ filter (\(t1,_,_) -> t1 == t) $ envAbsImplConv e
 
-deleteEnvType :: Env -> [Var] -> Env
-deleteEnvType e v = e { envType = filter (\x -> not (fst x `elem` v)) $ envType e }
+extendEnvType :: [(Var,Type)] -> Env -> Env
+extendEnvType t e = e { envType = t ++ envType e }
+
+deleteEnvType :: [Var] -> Env -> Env
+deleteEnvType v e = e { envType = filter (\x -> not (fst x `elem` v)) $ envType e }
 
 --
 -- Pattern Match

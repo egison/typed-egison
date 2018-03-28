@@ -134,7 +134,8 @@ topExpr = try (Test <$> expr)
                    <|> loadFileExpr
                    <|> loadExpr
                    <|> implicitConversionExpr
-                   <|> absoluteImplicitConversionExpr))
+                   <|> absoluteImplicitConversionExpr
+                   <|> defineTypeOfExpr))
       <?> "top-level expression"
 
 defineExpr :: Parser TopExpr
@@ -174,6 +175,9 @@ implicitConversionExpr = keywordImplConv >> ImplicitConversion <$> parseType <*>
 
 absoluteImplicitConversionExpr :: Parser TopExpr
 absoluteImplicitConversionExpr = keywordAbsImplConv >> AbsoluteImplicitConversion <$> parseType <*> parseType <*> expr
+
+defineTypeOfExpr :: Parser TopExpr
+defineTypeOfExpr = keywordDefineTypeOf >> DefineTypeOf <$> varName' <*> parseType
 
 parseType :: Parser Type
 parseType = (keywordTypeChar >> return TypeChar) 
@@ -995,6 +999,7 @@ keywordTypeCollection       = reserved "type-collection"
 keywordTypeFun              = reserved "type-fun"
 keywordTypeMatcher          = reserved "type-matcher"
 keywordTypePattern          = reserved "type-pattern"
+keywordDefineTypeOf         = reserved "define-type-of"
 
 
 sign :: Num a => Parser (a -> a)

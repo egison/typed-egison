@@ -47,7 +47,7 @@ applyImplConv' (CollectionExpr es) = do
 applyImplConv' (LambdaExpr args body) = do
     let args1 = filter (/= EE.Var []) $ map f args
     -- To realize shadowing of variables in args, we must delete args from environment
-    body1 <- local (\e -> deleteEnvType e args1) $ applyImplConv' body
+    body1 <- local (\e -> deleteEnvType args1 e) $ applyImplConv' body
     return $ map (\x -> LambdaExpr args x) body1
       where f (EE.TensorArg s) = EE.Var [s]
             f _ = EE.Var []
@@ -60,7 +60,7 @@ applyImplConv' (LetExpr binds exp) = do
   let vars = map (head.fst) binds
   let bodies = map snd binds
   bodies1 <- mapM applyImplConv' bodies
-  exp1 <- local (\e -> deleteEnvType e vars) $ applyImplConv' exp
+  exp1 <- local (\e -> deleteEnvType vars e) $ applyImplConv' exp
   return $ do
     let bodies2 = cartesian bodies1
     bodies3 <- bodies2
