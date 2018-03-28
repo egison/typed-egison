@@ -176,7 +176,30 @@ absoluteImplicitConversionExpr :: Parser TopExpr
 absoluteImplicitConversionExpr = keywordAbsImplConv >> AbsoluteImplicitConversion <$> parseType <*> parseType <*> expr
 
 parseType :: Parser Type
-parseType = (keywordTypeBool >> return TypeBool) <|> (keywordTypeInt >> return TypeInt)
+parseType = (keywordTypeChar >> return TypeChar) 
+            <|> (keywordTypeString >> return TypeString)
+            <|> (keywordTypeBool >> return TypeBool) 
+            <|> (keywordTypeInt >> return TypeInt)
+            <|> (parens (parseTypeMatcher
+                  <|> parseTypePattern
+                  <|> parseTypeCollection
+                  <|> parseTypeTuple
+                  <|> parseTypeFun))
+
+parseTypeMatcher :: Parser Type
+parseTypeMatcher = keywordTypeMatcher >> TypeMatcher <$> parseType
+
+parseTypePattern :: Parser Type
+parseTypePattern = keywordTypePattern >> TypePattern <$> parseType
+
+parseTypeCollection :: Parser Type
+parseTypeCollection = keywordTypeCollection >> TypeCollection <$> parseType
+
+parseTypeTuple :: Parser Type
+parseTypeTuple = keywordTypeTuple >> TypeTuple <$> sepEndBy parseType whiteSpace
+
+parseTypeFun :: Parser Type
+parseTypeFun = keywordTypeFun >> TypeFun <$> (parens parseTypeTuple) <*> parseType
 
 exprs :: Parser [Expr]
 exprs = endBy expr whiteSpace
@@ -963,8 +986,16 @@ keywordUserrefsNew          = reserved "user-refs!"
 keywordFunction             = reserved "function"
 keywordImplConv             = reserved "implicit-conversion"
 keywordAbsImplConv          = reserved "absolute-implicit-conversion"
+keywordTypeChar             = reserved "type-char"
+keywordTypeString           = reserved "type-string"
 keywordTypeBool             = reserved "type-bool"
 keywordTypeInt              = reserved "type-int"
+keywordTypeTuple            = reserved "type-tuple"
+keywordTypeCollection       = reserved "type-collection"
+keywordTypeFun              = reserved "type-fun"
+keywordTypeMatcher          = reserved "type-matcher"
+keywordTypePattern          = reserved "type-pattern"
+
 
 sign :: Num a => Parser (a -> a)
 sign = (char '-' >> return negate)
