@@ -153,7 +153,7 @@ exprToSub' env ty (EE.CollectionExpr es) = do
 exprToSub' env ty (EE.LambdaExpr args body) = do
     let args1 = filter (/= []) $ map f args
     arg1tys <- mapM (\_ -> do { x <- getNewTypeVarIndex; return (TypeVar x)}) args1
-    let env1 = (zip args1 arg1tys) ++ env
+    let env1 = (zip args1 arg1tys) ++ filter (\(v,_) -> not (v `elem` args1)) env
     tv <- getNewTypeVarIndex
     (sub1,ty1) <- exprToSub' env1 (TypeVar tv) body
     sub2 <- unifySub $ (ty, TypeFun (TypeTuple arg1tys) ty1):sub1
@@ -172,7 +172,7 @@ exprToSub' env ty (EE.LetExpr binds body) = do
     let exs = map snd binds
     tys <- mapM (\x -> getNewTypeVarIndex >>= (return . TypeVar)) binds
     sts <- mapM (\(x,y) -> exprToSub' env x y) $ zip tys exs
-    let env1 = env ++ zip names tys
+    let env1 = filter (\(v,_) -> not (v `elem` names)) env ++ zip names tys
     let sub1 = zip tys (map snd sts) ++ foldr (++) [] (map fst sts)
     sub2 <- unifySub sub1
     (sub3, ty3) <- exprToSub' env1 ty body
@@ -185,7 +185,7 @@ exprToSub' env ty (EE.LetRecExpr binds body) = do
     let exs = map snd binds
     tys <- mapM (\x -> getNewTypeVarIndex >>= (return . TypeVar)) binds
     sts <- mapM (\(x,y) -> exprToSub' env x y) $ zip tys exs
-    let env1 = env ++ zip names tys
+    let env1 = filter (\(v,_) -> not (v `elem` names)) env ++ zip names tys
     let sub1 = zip tys (map snd sts) ++ foldr (++) [] (map fst sts)
     sub2 <- unifySub sub1
     (sub3, ty3) <- exprToSub' env1 ty body
