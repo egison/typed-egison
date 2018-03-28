@@ -114,6 +114,13 @@ lookupTypeEnv e1 ((e2,t):r)
   | e1 == e2 = return t
   | otherwise = lookupTypeEnv e1 r
 
+
+-- There is TypeEnvironment in return value. 
+-- This is because new variables in pattern can be used in return expression.
+-- For example, look following Egison program.
+-- (match-all {1 2 3} (list integer) [<cons $x $xs> [x xs]])
+-- $x and $xs is used in [x xs].
+-- So we must bind all new variables($x,$xs) in the pattern to the environment.
 patternToSub :: TypeEnvironment -> Type -> EE.EgisonPattern -> MakeSubstition (Substitution, TypeEnvironment, Type)
 patternToSub env (TypePattern ty) (EE.ValuePat exp) = do
   (sub1, ty1) <- exprToSub' env ty exp
