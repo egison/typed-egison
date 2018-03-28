@@ -421,7 +421,8 @@ desugarIndex (Subscript expr) = desugar expr >>= return . Subscript
 desugarIndex (SupSubscript expr) = desugar expr >>= return . SupSubscript
 
 desugarPattern :: EgisonPattern -> DesugarM EgisonPattern
-desugarPattern pattern = LetPat (map makeBinding $ S.elems $ collectName pattern) <$> desugarPattern' pattern 
+desugarPattern pattern = desugarPattern' pattern 
+-- desugarPattern pattern = LetPat (map makeBinding $ S.elems $ collectName pattern) <$> desugarPattern' pattern 
  where
    collectNames :: [EgisonPattern] -> Set String
    collectNames patterns = S.unions $ map collectName patterns
@@ -434,7 +435,7 @@ desugarPattern pattern = LetPat (map makeBinding $ S.elems $ collectName pattern
    collectName (PApplyPat _ patterns) = collectNames patterns
    collectName (DApplyPat _ patterns) = collectNames patterns
    collectName (LoopPat _ (LoopRange _ _ endNumPat) pattern1 pattern2) = collectName endNumPat `S.union` collectName pattern1 `S.union` collectName pattern2
-   collectName (LetPat _ pattern) = collectName pattern
+   -- collectName (LetPat _ pattern) = collectName pattern
    collectName (IndexedPat (PatVar name) _) = S.singleton $ show name
    collectName (OrPat patterns) = collectNames patterns
    collectName (DivPat pattern1 pattern2) = collectName pattern1 `S.union` collectName pattern2
@@ -463,7 +464,7 @@ desugarPattern' (IndexedPat pattern exprs) = IndexedPat <$> desugarPattern' patt
 desugarPattern' (PApplyPat expr patterns) = PApplyPat <$> desugar expr <*> mapM desugarPattern' patterns 
 desugarPattern' (DApplyPat pattern patterns) = DApplyPat <$> desugarPattern' pattern <*> mapM desugarPattern' patterns 
 desugarPattern' (LoopPat name range pattern1 pattern2) =  LoopPat name <$> desugarLoopRange range <*> desugarPattern' pattern1 <*> desugarPattern' pattern2
-desugarPattern' (LetPat binds pattern) = LetPat <$> desugarBindings binds <*> desugarPattern' pattern
+-- desugarPattern' (LetPat binds pattern) = LetPat <$> desugarBindings binds <*> desugarPattern' pattern
 desugarPattern' (DivPat pattern1 pattern2) = do
   pat1' <- desugarPattern' pattern1
   pat2' <- desugarPattern' pattern2

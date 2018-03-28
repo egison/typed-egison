@@ -1146,29 +1146,29 @@ processMState' (MState env loops bindings ((MAtom pattern target matcher):trees)
     NotPat _ -> throwError $ EgisonBug "should not reach here (not pattern)"
     VarPat _ -> throwError $ Default $ "cannot use variable except in pattern function:" ++ show pattern
 
-    LetPat bindings' pattern' ->
-      let extractBindings ([name], expr) =
-            makeBindings [name] . (:[]) <$> newObjectRef env' expr
-          extractBindings (names, expr) =
-            makeBindings names <$> (evalExpr env' expr >>= fromTuple)
-      in
-       liftM concat (mapM extractBindings bindings')
-         >>= (\b -> return $ msingleton $ MState env loops (b ++ bindings) ((MAtom pattern' target matcher):trees))
-    PredPat predicate -> do
-      func <- evalExpr env' predicate
-      let arg = target
-      result <- applyFunc env func arg >>= fromWHNF
-      if result then return $ msingleton $ (MState env loops bindings trees)
-                else return MNil
-
-    PApplyPat func args -> do
-      func' <- evalExpr env' func
-      case func' of
-        Value (PatternFunc env'' names expr) ->
-          let penv = zip names args
-          in return $ msingleton $ MState env loops bindings (MNode penv (MState env'' [] [] [MAtom expr target matcher]) : trees)
-        _ -> throwError $ TypeMismatch "pattern constructor" func'
-
+    -- LetPat bindings' pattern' ->
+    --   let extractBindings ([name], expr) =
+    --         makeBindings [name] . (:[]) <$> newObjectRef env' expr
+    --       extractBindings (names, expr) =
+    --         makeBindings names <$> (evalExpr env' expr >>= fromTuple)
+    --   in
+    --    liftM concat (mapM extractBindings bindings')
+    --      >>= (\b -> return $ msingleton $ MState env loops (b ++ bindings) ((MAtom pattern' target matcher):trees))
+    -- PredPat predicate -> do
+    --   func <- evalExpr env' predicate
+    --   let arg = target
+    --   result <- applyFunc env func arg >>= fromWHNF
+    --   if result then return $ msingleton $ (MState env loops bindings trees)
+    --             else return MNil
+    --
+    -- PApplyPat func args -> do
+    --   func' <- evalExpr env' func
+    --   case func' of
+    --     Value (PatternFunc env'' names expr) ->
+    --       let penv = zip names args
+    --       in return $ msingleton $ MState env loops bindings (MNode penv (MState env'' [] [] [MAtom expr target matcher]) : trees)
+    --     _ -> throwError $ TypeMismatch "pattern constructor" func'
+    --
     DApplyPat func args -> do
       return $ msingleton $ (MState env loops bindings ((MAtom (InductivePat "apply" [func, (toListPat args)]) target matcher):trees))
 

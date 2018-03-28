@@ -344,7 +344,7 @@ data EgisonPattern =
   | ValuePat Expr
   | PredPat Expr
   | IndexedPat EgisonPattern [Expr]
-  | LetPat [BindingExpr] EgisonPattern
+  -- | LetPat [BindingExpr] EgisonPattern
   | NotPat EgisonPattern
   | AndPat [EgisonPattern]
   | OrPat [EgisonPattern]

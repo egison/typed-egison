@@ -676,7 +676,7 @@ pattern' = wildCard
                     <|> orderedOrPat
                     <|> orPat
                     <|> loopPat
-                    <|> letPat
+                    -- <|> letPat
                     <|> try divPat
                     <|> try plusPat
                     <|> try multPat
@@ -705,8 +705,8 @@ valuePat = char ',' >> ValuePat <$> expr
 predPat :: Parser EgisonPattern
 predPat = char '?' >> PredPat <$> expr
 
-letPat :: Parser EgisonPattern
-letPat = keywordLet >> LetPat <$> bindings <*> pattern
+-- letPat :: Parser EgisonPattern
+-- letPat = keywordLet >> LetPat <$> bindings <*> pattern
 
 notPat :: Parser EgisonPattern
 notPat = char '!' >> NotPat <$> pattern
