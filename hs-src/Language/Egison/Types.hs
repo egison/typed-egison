@@ -138,7 +138,6 @@ patternToSub env (TypePattern ty) (EE.PatVar var) = do
   return (sub, env1, applySub sub (TypePattern ty))
 patternToSub env (TypePattern ty) (EE.InductivePat pc pats) = do
   pctype <- lookupTypeEnv (EE.Var [pc]) env
-  -- throwError $ "[pc] = " ++ show pc ++ ", pctype = " ++ show pctype
   (sub1, env1, tys1) <- f env pats
   sub2 <- unifySub $ (pctype, TypeFun (TypeTuple tys1) (TypePattern ty)) : sub1
   return (sub2, env1, applySub sub2 (TypePattern ty))
@@ -236,9 +235,7 @@ exprToSub' env ty (EE.MatchAllExpr dt mt (pt,ex)) = do
     (sub1, ty1) <- exprToSub' env (TypeVar tvdt) dt
     (sub2, ty2) <- exprToSub' env (TypeMatcher (TypeVar tvdt)) mt
     (sub3, env1, ty3) <- patternToSub env (TypePattern (TypeVar tvdt)) pt
-    -- throwError $ show env1
     (sub4, ty4) <- exprToSub' env1 (TypeVar tvex) ex
-    -- throwError $ show (env1,ex,ty4)
     sub5 <- unifySub $ (ty1, TypeVar tvdt) : (ty2,TypeMatcher (TypeVar tvdt)) : (ty3,TypePattern (TypeVar tvdt)) : (ty4, TypeVar tvex) : (ty,TypeCollection (TypeVar tvex)) : sub1 ++ sub2 ++ sub3 ++ sub4
     return (sub5, applySub sub5 ty)
 exprToSub' env ty _ = return ([], TypeStar)
