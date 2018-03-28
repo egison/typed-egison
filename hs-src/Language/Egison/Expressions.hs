@@ -90,6 +90,7 @@ module Language.Egison.Expressions
     , nullEnv
     , extendEnv
     , refVar
+    , envType
     , extendEnvImplConv
     , refEnvImplConv
     , extendEnvType
@@ -405,9 +406,7 @@ data EgisonValue =
   | StrHash (HashMap Text EgisonValue)
   | UserMatcher Env PMMode MatcherInfo
   | Func (Maybe Var) Env [String] Expr
-  | PartialFunc Env Integer Expr
-  | CFunc (Maybe Var) Env String Expr
-  | MemoizedFunc (Maybe Var) ObjectRef (IORef (HashMap [Integer] ObjectRef)) Env [String] Expr
+  | PartialFunc Env Integer Expr | CFunc (Maybe Var) Env String Expr | MemoizedFunc (Maybe Var) ObjectRef (IORef (HashMap [Integer] ObjectRef)) Env [String] Expr
   | Proc (Maybe String) Env [String] Expr
   | Macro [String] Expr
   | PatternFunc Env [String] EgisonPattern

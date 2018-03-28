@@ -266,7 +266,7 @@ repl noIOFlag mathExprLang env prompt = do
         print "AST of input is following."
         print ast
         putStrLn "---------------------\n"
-        let tc = ast >>= (return . TC.checkTopExpr)
+        let tc = ast >>= (return . TC.checkTopExpr env)
         print tc
         putStrLn "---------------------\n"
         let ics = liftM (implConvTopExpr env) ast

@@ -28,12 +28,12 @@ type Substitution = [Restriction]
 type TypeEnvironment = [(EE.Var,Type)]
 type MakeSubstition = ExceptT String (State TypeVarIndex)
 
-checkTopExpr :: EE.TopExpr -> Either String (Substitution, Type)
-checkTopExpr (EE.Test e) = exprToSub e
-checkTopExpr _ = return ([], TypeStar)
+checkTopExpr :: EE.Env -> EE.TopExpr -> Either String (Substitution, Type)
+checkTopExpr env (EE.Test e) = exprToSub env e
+checkTopExpr env _ = return ([], TypeStar)
 
-exprToSub :: EE.Expr -> Either String (Substitution, Type)
-exprToSub e = evalState (runExceptT $ exprToSub' [] (TypeVar 0) e) 1
+exprToSub :: EE.Env -> EE.Expr -> Either String (Substitution, Type)
+exprToSub env e = evalState (runExceptT $ exprToSub' (EE.envType env) (TypeVar 0) e) 1
 
 applySub :: Substitution -> Type -> Type
 applySub s (TypeVar i) = fromMaybe (TypeVar i) (lookup (TypeVar i) s)
@@ -100,6 +100,11 @@ getNewTypeVarIndex = do
   put (i+1)
   return i
 
+getNewTypeVar :: MakeSubstition Type
+getNewTypeVar = do
+  i <- getNewTypeVarIndex
+  return $ TypeVar i
+
 innersToExprs :: [EE.InnerExpr] -> [EE.Expr]
 innersToExprs [] = []
 innersToExprs (EE.ElementExpr e:rest) = e:(innersToExprs rest)
@@ -131,7 +136,22 @@ patternToSub env (TypePattern ty) (EE.PatVar var) = do
   let env1 = (var,TypeVar tvi) : env
   let sub = [(ty, TypeVar tvi)]
   return (sub, env1, applySub sub (TypePattern ty))
-patternToSub _ _ _ = return ([], [], TypeStar)
+patternToSub env (TypePattern ty) (EE.InductivePat pc pats) = do
+  pctype <- lookupTypeEnv (EE.Var [pc]) env
+  -- throwError $ "[pc] = " ++ show pc ++ ", pctype = " ++ show pctype
+  (sub1, env1, tys1) <- f env pats
+  sub2 <- unifySub $ (pctype, TypeFun (TypeTuple tys1) (TypePattern ty)) : sub1
+  return (sub2, env1, applySub sub2 (TypePattern ty))
+  where
+    f :: TypeEnvironment -> [EE.EgisonPattern] -> MakeSubstition (Substitution, TypeEnvironment, [Type])
+    f env [] = return ([], env, [])
+    f env (p:rest) = do
+      ty1 <- getNewTypeVar
+      (sub2,env2,ty2) <- patternToSub env (TypePattern ty1) p
+      (sub3,env3,tys3) <- f env2 rest
+      return ((TypePattern ty1,ty2) : sub3, env3, ty2:tys3)
+patternToSub _ (TypePattern _) _ = return ([], [], TypeStar)
+patternToSub _ ty _ = throwError $ "Pattern is type as no pattern type " ++ show ty
 
 exprToSub' :: TypeEnvironment -> Type -> EE.Expr -> MakeSubstition (Substitution, Type)
 exprToSub' env ty (EE.CharExpr _ ) = return ([(ty,TypeChar)], TypeChar)
