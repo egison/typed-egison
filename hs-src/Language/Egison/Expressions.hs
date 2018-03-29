@@ -194,6 +194,7 @@ import Data.Ratio
 import Numeric
 
 import System.IO.Unsafe (unsafePerformIO)
+import qualified Data.Map.Strict as MS
 
 --
 -- Types
@@ -1532,11 +1533,11 @@ class (EgisonWHNF a) => EgisonObject a where
 -- Environment
 --
 
-data Env = Env { envExpr::[HashMap Var ObjectRef], envType::[(Var, Type)], envImplConv::[(Type, Type, Expr)], envAbsImplConv::[(Type, Type, Expr)] }
+data Env = Env { envExpr::MS.Map Var ObjectRef, envType::[(Var, Type)], envImplConv::[(Type, Type, Expr)], envAbsImplConv::[(Type, Type, Expr)] }
  deriving (Show)
 
 newtype Var = Var [String]
- deriving (Show, Eq, Hashable)
+ deriving (Show, Eq, Ord)
 
 data VarWithIndexType = VarWithIndexType String [Index ()]
  deriving (Eq)
@@ -1596,13 +1597,13 @@ instance Show (Index EgisonValue) where
                          _ -> "|" ++ show i
 
 nullEnv :: Env
-nullEnv = Env { envExpr = [], envType = [], envImplConv = [], envAbsImplConv = [] }
+nullEnv = Env { envExpr = MS.empty, envType = [], envImplConv = [], envAbsImplConv = [] }
 
 extendEnv :: Env -> [Binding] -> Env
-extendEnv env bind = env { envExpr=(HashMap.fromList bind):(envExpr env) }
+extendEnv env bind = env { envExpr= foldr (\(k,v) -> MS.insert k v) (envExpr env) bind }
 
 refVar :: Env -> Var -> Maybe ObjectRef
-refVar env var = msum $ map (HashMap.lookup var) (envExpr env)
+refVar env var = MS.lookup var $ envExpr env
 
 extendEnvImplConv :: [(Type,Type,Expr)] -> Env -> Env
 extendEnvImplConv is e = e { envImplConv=is++envImplConv e }
