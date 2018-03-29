@@ -104,62 +104,49 @@ findAllTopExpr (e:rest) = do
 
 evalTopExprs :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprs env exprs = do
-  (bindings, rest) <- collectDefs exprs [] []
-  exprs1 <- findAllTopExpr exprs
-  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs1)
-             $ extendEnvImplConv (collectImplicitConversion exprs1) 
-             $ extendEnvType (collectDefineTypeOf exprs1) env
+  allExprs <- findAllTopExpr exprs
+  (bindings, rest) <- collectDefs allExprs [] []
+  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion allExprs)
+             $ extendEnvImplConv (collectImplicitConversion allExprs) 
+             $ extendEnvType (collectDefineTypeOf allExprs) env
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
     where
       collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
+      collectDefs [] bindings rest = return (bindings, reverse rest)
       collectDefs (expr:exprs) bindings rest =
         case expr of
           Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
-          Load file -> do
-            exprs' <- loadLibraryFile file
-            collectDefs (exprs' ++ exprs) bindings rest
-          LoadFile file -> do
-            exprs' <- loadFile file
-            collectDefs (exprs' ++ exprs) bindings rest
           Execute _ -> collectDefs exprs bindings (expr : rest)
           _ -> collectDefs exprs bindings rest
-      collectDefs [] bindings rest = return (bindings, reverse rest)
 
 evalTopExprsTestOnly :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprsTestOnly env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  exprs1 <- findAllTopExpr exprs
-  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs1)
-             $ extendEnvImplConv (collectImplicitConversion exprs1) 
-             $ extendEnvType (collectDefineTypeOf exprs1) env
+  allExprs <- findAllTopExpr exprs
+  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion allExprs)
+             $ extendEnvImplConv (collectImplicitConversion allExprs)
+             $ extendEnvType (collectDefineTypeOf allExprs) env
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
  where
       collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
+      collectDefs [] bindings rest = return (bindings, reverse rest)
       collectDefs (expr:exprs) bindings rest =
         case expr of
           Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
-          Load file -> do
-            exprs' <- loadLibraryFile file
-            collectDefs (exprs' ++ exprs) bindings rest
-          LoadFile file -> do
-            exprs' <- loadFile file
-            collectDefs (exprs' ++ exprs) bindings rest
           Test _ -> collectDefs exprs bindings (expr : rest)
           Redefine _ _ -> collectDefs exprs bindings (expr : rest)
           _ -> collectDefs exprs bindings rest
-      collectDefs [] bindings rest = return (bindings, reverse rest)
 
 evalTopExprsNoIO :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprsNoIO env exprs = do
   (bindings, rest) <- collectDefs exprs [] []
-  exprs1 <- findAllTopExpr exprs
-  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs1)
-             $ extendEnvImplConv (collectImplicitConversion exprs1) 
-             $ extendEnvType (collectDefineTypeOf exprs1) env
+  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs)
+             $ extendEnvImplConv (collectImplicitConversion exprs)
+             $ extendEnvType (collectDefineTypeOf exprs) env
   env2 <- recursiveBind env1 bindings
   forM_ rest $ evalTopExpr env2
   return env2
