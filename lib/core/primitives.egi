@@ -1,0 +1,1 @@
+(define-type-of $b.+ (type-fun (type-tuple type-int type-int) type-int))
