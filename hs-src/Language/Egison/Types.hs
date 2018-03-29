@@ -112,13 +112,10 @@ innersToExprs ((EE.SubCollectionExpr (EE.CollectionExpr is)):rest) =
     innersToExprs is ++ innersToExprs rest
 
 lookupTypeEnv :: EE.Var -> TypeEnvironment -> MakeSubstition Type
-lookupTypeEnv e [] = do
-  i <- getNewTypeVarIndex
-  return $ (TypeVar i)
+lookupTypeEnv e [] = throwError $ "Cannot decide the type of " ++ show e
 lookupTypeEnv e1 ((e2,t):r)
   | e1 == e2 = return t
   | otherwise = lookupTypeEnv e1 r
-
 
 -- There is TypeEnvironment in return value. 
 -- This is because new variables in pattern can be used in return expression.

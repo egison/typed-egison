@@ -265,13 +265,15 @@ repl noIOFlag mathExprLang env prompt = do
         ast <-  fromEgisonM $ readTopExpr topExpr
         print "AST of input is following."
         print ast
-        putStrLn "---------------------\n"
+        putStrLn "---------------------"
         let tc = ast >>= (return . TC.checkTopExpr env)
-        print tc
-        putStrLn "---------------------\n"
+        case tc of
+          (Right (Right (s,t))) -> putStrLn $ "subst = "++show s++"\ntype of exp = "++show t
+          _ -> print tc
+        putStrLn "---------------------"
         let ics = liftM (implConvTopExpr env) ast
         print ics
-        putStrLn "---------------------\n"
+        putStrLn "---------------------"
         -- show AST for debug
         result <- liftIO $ runEgisonTopExpr' env topExpr
         case result of

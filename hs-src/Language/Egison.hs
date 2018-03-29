@@ -100,7 +100,7 @@ initialEnv = do
 -- |Environment that contains core libraries without IO primitives
 initialEnvNoIO :: IO Env
 initialEnvNoIO = do
-  env <- primitiveEnvNoIO 
+  env <- primitiveEnvNoIO
   ret <- evalEgisonTopExprs env $ map Load coreLibraries
   case ret of
     Left err -> do
@@ -109,7 +109,7 @@ initialEnvNoIO = do
     Right env' -> return env'
 
 coreLibraries :: [String]
-coreLibraries = []
+coreLibraries = [ "lib/core/primitives.egi" ]
   -- [ "lib/math/expression.egi"
   -- , "lib/math/normalize.egi"
   -- , "lib/math/common/arithmetic.egi"
