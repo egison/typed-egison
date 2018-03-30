@@ -14,12 +14,14 @@ module Language.Egison.Types(
 
 import qualified Language.Egison.Expressions as EE
 import Language.Egison.Expressions (Type(..), TypeVarIndex)
-import Control.Monad.State (State,evalState,get,put)
+import Control.Monad.State (State,evalState,get,put,runState)
 import Control.Monad.Trans.Except (ExceptT,runExceptT,catchE)
 import Control.Monad.Except(throwError)
 import Data.Maybe (fromMaybe)
 import Data.List (nub)
 import Debug.Trace
+import Data.IORef (newIORef, readIORef, writeIORef, IORef)
+import System.IO.Unsafe (unsafePerformIO)
 
 -- First element of Restriction will be type valiable.
 -- Second element of Restriction is what the first element refer.
@@ -34,8 +36,18 @@ checkTopExpr :: EE.Env -> EE.TopExpr -> Either String (Substitution, Type)
 checkTopExpr env (EE.Test e) = exprToSub env e
 checkTopExpr env _ = return ([], TypeStar)
 
+typeVarIndexCache :: IORef TypeVarIndex
+typeVarIndexCache = unsafePerformIO $ newIORef 1
+
 exprToSub :: EE.Env -> EE.Expr -> Either String (Substitution, Type)
-exprToSub env e = evalState (runExceptT $ exprToSub' env1 (TypeVar 0) e) 1
+exprToSub env exp = unsafePerformIO $ exprToSubIO env exp
+
+exprToSubIO :: EE.Env -> EE.Expr -> IO (Either String (Substitution, Type))
+exprToSubIO env exp = do
+  i <- readIORef typeVarIndexCache
+  let (a,s) = runState (runExceptT $ exprToSub' env1 (TypeVar 0) exp) i
+  writeIORef typeVarIndexCache (s+1)
+  return a
   where ty2tys ty = TypeScheme (freeTypeVarIndex ty) ty
         env1 = map (\(v,t) -> (v,ty2tys t)) (EE.envType env)
 
