@@ -90,75 +90,68 @@ collectDefineTypeOf [] = []
 collectDefineTypeOf ((DefineTypeOf v t):rest) = (v,t):collectDefineTypeOf rest
 collectDefineTypeOf (_:rest) = collectDefineTypeOf rest
 
-findAllTopExpr :: [TopExpr] -> EgisonM [TopExpr]
-findAllTopExpr [] = return []
-findAllTopExpr ((LoadFile f):rest) = do
+expandLoad :: [TopExpr] -> EgisonM [TopExpr]
+expandLoad [] = return []
+expandLoad ((LoadFile f):rest) = do
   es <- loadLibraryFile f
-  findAllTopExpr (es ++ rest)
-findAllTopExpr (Load f:rest) = do
+  expandLoad (es ++ rest)
+expandLoad (Load f:rest) = do
   es <- loadFile f
-  findAllTopExpr (es ++ rest)
-findAllTopExpr (e:rest) = do
-  es <- findAllTopExpr rest
+  expandLoad (es ++ rest)
+expandLoad (e:rest) = do
+  es <- expandLoad rest
   return (e:es)
+
+isExecute (Execute _) = True
+isExecute _ = False
+
+isDefine (Define _ _) = True
+isDefine _ = False
+
+isTest (Test _) = True
+isTest _ = False
+
+isLoad (Load _) = True
+isLoad _ = False
+
+isLoadFile (LoadFile _) = True
+isLoadFile _ = False
 
 evalTopExprs :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprs env exprs = do
-  allExprs <- findAllTopExpr exprs
-  (bindings, rest) <- collectDefs allExprs [] []
+  allExprs <- expandLoad exprs
   let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion allExprs)
              $ extendEnvImplConv (collectImplicitConversion allExprs) 
              $ extendEnvType (collectDefineTypeOf allExprs) env
+  let bindings = map (\(Define n e) -> (stringToVar $ show n,e)) $ filter isDefine allExprs
   env2 <- recursiveBind env1 bindings
-  forM_ rest $ evalTopExpr env2
+  forM_ (filter isExecute allExprs) $ evalTopExpr env2
   return env2
-    where
-      collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
-      collectDefs [] bindings rest = return (bindings, reverse rest)
-      collectDefs (expr:exprs) bindings rest =
-        case expr of
-          Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
-          Execute _ -> collectDefs exprs bindings (expr : rest)
-          _ -> collectDefs exprs bindings rest
 
 evalTopExprsTestOnly :: Env -> [TopExpr] -> EgisonM Env
 evalTopExprsTestOnly env exprs = do
-  (bindings, rest) <- collectDefs exprs [] []
-  allExprs <- findAllTopExpr exprs
+  allExprs <- expandLoad exprs
   let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion allExprs)
              $ extendEnvImplConv (collectImplicitConversion allExprs)
              $ extendEnvType (collectDefineTypeOf allExprs) env
+  let bindings = map (\(Define n e) -> (stringToVar $ show n,e)) $ filter isDefine allExprs
   env2 <- recursiveBind env1 bindings
-  forM_ rest $ evalTopExpr env2
+  forM_ (filter isTest allExprs) $ evalTopExpr env2
   return env2
- where
-      collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
-      collectDefs [] bindings rest = return (bindings, reverse rest)
-      collectDefs (expr:exprs) bindings rest =
-        case expr of
-          Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
-          Test _ -> collectDefs exprs bindings (expr : rest)
-          Redefine _ _ -> collectDefs exprs bindings (expr : rest)
-          _ -> collectDefs exprs bindings rest
 
 evalTopExprsNoIO :: Env -> [TopExpr] -> EgisonM Env
-evalTopExprsNoIO env exprs = do
-  (bindings, rest) <- collectDefs exprs [] []
-  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs)
-             $ extendEnvImplConv (collectImplicitConversion exprs)
-             $ extendEnvType (collectDefineTypeOf exprs) env
-  env2 <- recursiveBind env1 bindings
-  forM_ rest $ evalTopExpr env2
-  return env2
- where
-      collectDefs :: [TopExpr] -> [(Var, Expr)] -> [TopExpr] -> EgisonM ([(Var, Expr)], [TopExpr])
-      collectDefs (expr:exprs) bindings rest =
-        case expr of
-          Define name expr -> collectDefs exprs (((stringToVar $ show name), expr) : bindings) rest
-          Load _ -> throwError $ Default "No IO support"
-          LoadFile _ -> throwError $ Default "No IO support"
-          _ -> collectDefs exprs bindings (expr : rest)
-      collectDefs [] bindings rest = return (bindings, reverse rest)
+evalTopExprsNoIO env exprs =
+  if filter isLoad exprs ++ filter isLoadFile exprs /= []
+    then
+      throwError $ Default "No IO support"
+    else do
+      let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs)
+                 $ extendEnvImplConv (collectImplicitConversion exprs)
+                 $ extendEnvType (collectDefineTypeOf exprs) env
+      let bindings = map (\(Define n e) -> (stringToVar $ show n,e)) $ filter isDefine exprs
+      env2 <- recursiveBind env1 bindings
+      forM_ (filter isTest exprs) $ evalTopExpr env2
+      return env2
 
 evalTopExpr :: Env -> TopExpr -> EgisonM Env
 evalTopExpr env topExpr = do
