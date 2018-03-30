@@ -14,9 +14,9 @@ module Language.Egison.Core
       evalTopExprs
     , evalTopExprsTestOnly
     , evalTopExprsNoIO
-    , evalTopExpr
-    , evalTopExpr'
-    , evalExpr
+    -- , evalTopExpr
+    -- , evalTopExpr'
+    -- , evalExpr
     , evalExprDeep
     , evalRef
     , evalRefDeep
@@ -74,22 +74,6 @@ import Language.Egison.Parser
 -- Evaluator
 --
 
-collectImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
-collectImplicitConversion [] = []
-collectImplicitConversion ((ImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
-collectImplicitConversion (_:rest) = collectImplicitConversion rest
-
-
-collectAbsImplicitConversion :: [TopExpr] -> [(Type,Type,Expr)]
-collectAbsImplicitConversion [] = []
-collectAbsImplicitConversion ((AbsoluteImplicitConversion t1 t2 e):rest) = (t1,t2,e):collectImplicitConversion rest
-collectAbsImplicitConversion (_:rest) = collectImplicitConversion rest
-
-collectDefineTypeOf :: [TopExpr] -> [(Var,Type)]
-collectDefineTypeOf [] = []
-collectDefineTypeOf ((DefineTypeOf v t):rest) = (v,t):collectDefineTypeOf rest
-collectDefineTypeOf (_:rest) = collectDefineTypeOf rest
-
 expandLoad :: [TopExpr] -> EgisonM [TopExpr]
 expandLoad [] = return []
 expandLoad ((LoadFile f):rest) = do
@@ -117,62 +101,51 @@ isLoad _ = False
 isLoadFile (LoadFile _) = True
 isLoadFile _ = False
 
-extendEnvAll :: Env -> [TopExpr] -> EgisonM Env
-extendEnvAll env exprs = do
-  let env1 = extendEnvAbsImplConv (collectAbsImplicitConversion exprs)
-             $ extendEnvImplConv (collectImplicitConversion exprs) 
-             $ extendEnvType (collectDefineTypeOf exprs) env
-  let bindings = map (\(Define n e) -> (stringToVar $ show n,e)) $ filter isDefine exprs
-  recursiveBind env1 bindings
-
-evalTopExprs :: Env -> [TopExpr] -> EgisonM Env
+evalTopExprs :: Env -> [TopExpr] -> EgisonM (Maybe String, Env)
 evalTopExprs env exprs = do
   allExprs <- expandLoad exprs
-  env1 <- extendEnvAll env allExprs
-  forM_ (filter isExecute allExprs) $ evalTopExpr env1
-  return env1
+  evalTopExprsWithoutLoad env allExprs
 
-evalTopExprsTestOnly :: Env -> [TopExpr] -> EgisonM Env
+evalTopExprsTestOnly :: Env -> [TopExpr] -> EgisonM (Maybe String, Env)
 evalTopExprsTestOnly env exprs = do
   allExprs <- expandLoad exprs
-  env1 <- extendEnvAll env allExprs
-  forM_ (filter isTest allExprs) $ evalTopExpr env1
-  return env1
+  evalTopExprsWithoutLoad env (filter (\x -> not $ isExecute x) allExprs)
 
-evalTopExprsNoIO :: Env -> [TopExpr] -> EgisonM Env
+evalTopExprsNoIO :: Env -> [TopExpr] -> EgisonM (Maybe String, Env)
 evalTopExprsNoIO env exprs =
   if filter isLoad exprs ++ filter isLoadFile exprs /= []
     then
       throwError $ Default "No IO support"
     else do
-      env1 <- extendEnvAll env exprs
-      forM_ (filter isTest exprs) $ evalTopExpr env1
-      return env1
+      evalTopExprsWithoutLoad env exprs
 
-evalTopExpr :: Env -> TopExpr -> EgisonM Env
-evalTopExpr env topExpr = do
-  ret <- evalTopExpr' env topExpr
-  case fst ret of
-    Nothing -> return ()
-    Just output -> liftIO $ putStrLn output
-  return $ snd ret
+evalTopExprsWithoutLoad :: Env -> [TopExpr] -> EgisonM (Maybe String, Env)
+evalTopExprsWithoutLoad env [] = return (Nothing, env)
+evalTopExprsWithoutLoad env (t:rest) = do
+  (o1,e1) <- evalTopExpr env t
+  (o2,e2) <- evalTopExprsWithoutLoad env rest
+  return (f (o1,o2), e2)
+    where
+      f (Nothing, Nothing) = Nothing
+      f (Nothing, a) = a
+      f (a, Nothing) = a
+      f (Just a,Just b) = Just $ a ++ "\n" ++ b
 
-evalTopExpr' :: Env -> TopExpr -> EgisonM (Maybe String, Env)
-evalTopExpr' env (Define name expr) = recursiveBind env [((stringToVar $ show name), expr)] >>= return . ((,) Nothing)
-evalTopExpr' env (Redefine name expr) = recursiveRebind env ((stringToVar $ show name), expr) >>= return . ((,) Nothing)
-evalTopExpr' env (Test expr) = do
+-- The return value is (output string, environment)
+evalTopExpr :: Env -> TopExpr -> EgisonM (Maybe String, Env)
+evalTopExpr env (Define name expr) = recursiveBind env [((stringToVar $ show name), expr)] >>= return . ((,) Nothing)
+evalTopExpr env (Redefine name expr) = recursiveRebind env ((stringToVar $ show name), expr) >>= return . ((,) Nothing)
+evalTopExpr env (Test expr) = do
   val <- evalExprDeep env expr
   return (Just (show val), env)
-evalTopExpr' env (Execute expr) = do
+evalTopExpr env (Execute expr) = do
   io <- evalExpr env expr
   case io of
     Value (IOFunc m) -> m >> return (Nothing, env)
     _ -> throwError $ TypeMismatch "io" io
-evalTopExpr' env (Load file) = loadLibraryFile file >>= evalTopExprs env >>= return . ((,) Nothing)
-evalTopExpr' env (LoadFile file) = loadFile file >>= evalTopExprs env >>= return . ((,) Nothing)
-evalTopExpr' env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv [(t1,t2,e)] env)
-evalTopExpr' env (AbsoluteImplicitConversion t1 t2 e) = return (Nothing, extendEnvAbsImplConv [(t1,t2,e)] env)
-evalTopExpr' env (DefineTypeOf v t) = return (Nothing, extendEnvType [(v,t)] env)
+evalTopExpr env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv [(t1,t2,e)] env)
+evalTopExpr env (AbsoluteImplicitConversion t1 t2 e) = return (Nothing, extendEnvAbsImplConv [(t1,t2,e)] env)
+evalTopExpr env (DefineTypeOf v t) = return (Nothing, extendEnvType [(v,t)] env)
 
 evalExpr :: Env -> Expr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c

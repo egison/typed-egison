@@ -42,21 +42,29 @@ import Language.Egison.Core
 version :: Version
 version = P.version
 
+outputResult :: IO (Either EgisonError (Maybe String, Env)) -> IO (Either EgisonError Env)
+outputResult t = do
+  t1 <- t
+  case t1 of
+    Right (Just o,e) -> putStrLn o >> return (Right e)
+    Right (Nothing,e) -> return (Right e)
+    Left e -> return (Left e)
+
 -- |eval an Egison expression
 evalEgisonExpr :: Env -> Expr -> IO (Either EgisonError EgisonValue)
 evalEgisonExpr env expr = fromEgisonM $ evalExprDeep env expr
 
 -- |eval an Egison top expression
 evalEgisonTopExpr :: Env -> TopExpr -> IO (Either EgisonError Env)
-evalEgisonTopExpr env exprs = fromEgisonM $ evalTopExpr env exprs
+evalEgisonTopExpr env expr = outputResult $ fromEgisonM $ evalTopExprs env [expr]
 
 -- |eval Egison top expressions
 evalEgisonTopExprs :: Env -> [TopExpr] -> IO (Either EgisonError Env)
-evalEgisonTopExprs env exprs = fromEgisonM $ evalTopExprs env exprs
+evalEgisonTopExprs env exprs = outputResult $ fromEgisonM $ evalTopExprs env exprs
 
 -- |eval Egison top expressions and execute test expressions
 evalEgisonTopExprsTestOnly :: Env -> [TopExpr] -> IO (Either EgisonError Env)
-evalEgisonTopExprsTestOnly env exprs = fromEgisonM $ evalTopExprsTestOnly env exprs
+evalEgisonTopExprsTestOnly env exprs = outputResult $ fromEgisonM $ evalTopExprsTestOnly env exprs
 
 -- |eval an Egison expression. Input is a Haskell string.
 runEgisonExpr :: Env -> String -> IO (Either EgisonError EgisonValue)
@@ -64,19 +72,19 @@ runEgisonExpr env input = fromEgisonM $ readExpr input >>= evalExprDeep env
 
 -- |eval an Egison top expression. Input is a Haskell string.
 runEgisonTopExpr :: Env -> String -> IO (Either EgisonError Env)
-runEgisonTopExpr env input = fromEgisonM $ readTopExpr input >>= evalTopExpr env
+runEgisonTopExpr env input = outputResult $ fromEgisonM $ readTopExprs input >>= evalTopExprs env
 
 -- |eval an Egison top expression. Input is a Haskell string.
 runEgisonTopExpr' :: Env -> String -> IO (Either EgisonError (Maybe String, Env))
-runEgisonTopExpr' env input = fromEgisonM $ readTopExpr input >>= evalTopExpr' env
+runEgisonTopExpr' env input = fromEgisonM $ readTopExpr input >>= (\x -> evalTopExprs env [x])
 
 -- |eval Egison top expressions. Input is a Haskell string.
 runEgisonTopExprs :: Env -> String -> IO (Either EgisonError Env)
-runEgisonTopExprs env input = fromEgisonM $ readTopExprs input >>= evalTopExprs env
+runEgisonTopExprs env input = outputResult $ fromEgisonM $ readTopExprs input >>= evalTopExprs env
 
 -- |eval Egison top expressions without IO. Input is a Haskell string.
 runEgisonTopExprsNoIO :: Env -> String -> IO (Either EgisonError Env)
-runEgisonTopExprsNoIO env input = fromEgisonM $ readTopExprs input >>= evalTopExprsNoIO env
+runEgisonTopExprsNoIO env input = outputResult $ fromEgisonM $ readTopExprs input >>= evalTopExprsNoIO env
 
 -- |load an Egison file
 loadEgisonFile :: Env -> FilePath -> IO (Either EgisonError Env)
