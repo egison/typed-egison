@@ -66,6 +66,8 @@ import qualified Data.Text as T
 
 import Language.Egison.Expressions
 import Language.Egison.Parser
+import Language.Egison.Types
+import Debug.Trace
 
 --
 -- Evaluator
@@ -120,7 +122,7 @@ evalTopExprsWithoutLoad :: Env -> [TopExpr] -> EgisonM (Maybe String, Env)
 evalTopExprsWithoutLoad env [] = return (Nothing, env)
 evalTopExprsWithoutLoad env (t:rest) = do
   (o1,e1) <- evalTopExpr env t
-  (o2,e2) <- evalTopExprsWithoutLoad env rest
+  (o2,e2) <- evalTopExprsWithoutLoad e1 rest
   return (f (o1,o2), e2)
     where
       f (Nothing, Nothing) = Nothing
@@ -130,8 +132,15 @@ evalTopExprsWithoutLoad env (t:rest) = do
 
 -- The return value is (output string, environment)
 evalTopExpr :: Env -> TopExpr -> EgisonM (Maybe String, Env)
-evalTopExpr env (Define name expr) = recursiveBind env [((stringToVar $ show name), expr)] >>= return . ((,) Nothing)
-evalTopExpr env (Redefine name expr) = recursiveRebind env ((stringToVar $ show name), expr) >>= return . ((,) Nothing)
+evalTopExpr env (Define name expr) =
+  case typecheck of
+    Right (_,ty) ->
+      let env1 = extendEnvType [((stringToVar $ show name),ty)] env in
+      recursiveBind env1 [((stringToVar $ show name), expr)] >>= return . ((,) Nothing)
+    Left err -> throwError $ Default err
+    where typecheck = checkTopExpr env (Define name expr)
+evalTopExpr env (Redefine name expr) = 
+  recursiveRebind env ((stringToVar $ show name), expr) >>= return . ((,) Nothing)
 evalTopExpr env (Test expr) = do
   val <- evalExprDeep env expr
   return (Just (show val), env)

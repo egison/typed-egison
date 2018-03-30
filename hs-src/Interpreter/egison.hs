@@ -23,6 +23,7 @@ import Language.Egison.Util
 import Language.Egison.MathOutput
 import qualified Language.Egison.Types as TC
 import Language.Egison.ImplConv (implConvTopExpr)
+import Debug.Trace
 
 main :: IO ()
 main = do args <- getArgs

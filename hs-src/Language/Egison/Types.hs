@@ -34,6 +34,8 @@ type MakeSubstitionM = ExceptT String (State TypeVarIndex)
 
 checkTopExpr :: EE.Env -> EE.TopExpr -> Either String (Substitution, Type)
 checkTopExpr env (EE.Test e) = exprToSub env e
+checkTopExpr env (EE.Define (EE.VarWithIndexType vn _) exp) =
+  checkTopExpr env (EE.Test (EE.LetRecExpr [([EE.Var [vn]],exp)] exp))
 checkTopExpr env _ = return ([], TypeStar)
 
 typeVarIndexCache :: IORef TypeVarIndex

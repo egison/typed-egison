@@ -37,6 +37,7 @@ import Language.Egison.Expressions
 import Language.Egison.Parser
 import Language.Egison.Primitives
 import Language.Egison.Core
+import Debug.Trace
 
 -- |Version number
 version :: Version
