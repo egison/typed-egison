@@ -209,7 +209,7 @@ import qualified Data.Map.Strict as MS
 data Type = TypeChar | TypeString | TypeBool | TypeInt | TypeVar TypeVarIndex | TypeStar |
             TypeFun Type Type | TypeTuple [Type] | TypeCollection Type | TypePattern Type | TypeMatcher Type
             deriving (Show,Eq)
-type TypeVarIndex = Int
+type TypeVarIndex = Integer
 
 
 --

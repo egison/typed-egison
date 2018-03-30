@@ -179,16 +179,16 @@ absoluteImplicitConversionExpr = keywordAbsImplConv >> AbsoluteImplicitConversio
 defineTypeOfExpr :: Parser TopExpr
 defineTypeOfExpr = keywordDefineTypeOf >> DefineTypeOf <$> varName' <*> parseType
 
-parseType :: Parser Type
-parseType = (keywordTypeChar >> return TypeChar) 
-            <|> (keywordTypeString >> return TypeString)
-            <|> (keywordTypeBool >> return TypeBool) 
-            <|> (keywordTypeInt >> return TypeInt)
-            <|> (parens (parseTypeMatcher
-                  <|> parseTypePattern
-                  <|> parseTypeCollection
-                  <|> parseTypeTuple
-                  <|> parseTypeFun))
+parseType = (try keywordTypeChar >> return TypeChar) 
+            <|> (try keywordTypeString >> return TypeString)
+            <|> (try keywordTypeBool >> return TypeBool) 
+            <|> (try keywordTypeInt >> return TypeInt)
+            <|> (parens (try parseTypeMatcher
+                  <|> try parseTypePattern
+                  <|> try parseTypeCollection
+                  <|> try parseTypeTuple
+                  <|> try parseTypeFun
+                  <|> try (keywordTypeVar >> TypeVar <$> naturalLiteral)))
 
 parseTypeMatcher :: Parser Type
 parseTypeMatcher = keywordTypeMatcher >> TypeMatcher <$> parseType
@@ -902,9 +902,19 @@ reservedKeywords =
   , "something"
   , "undefined"
   , "implicit-conversion"
+  , "define-type-of"
+  , "type-char"
+  , "type-string"
   , "type-bool"
-  , "type-int" ]
-  
+  , "type-int"
+  , "type-tuple"
+  , "type-collection"
+  , "type-fun"
+  , "type-matcher"
+  , "type-pattern"
+  , "type-var"]
+
+
 reservedOperators :: [String]
 reservedOperators = 
   [ "$"
@@ -999,6 +1009,7 @@ keywordTypeCollection       = reserved "type-collection"
 keywordTypeFun              = reserved "type-fun"
 keywordTypeMatcher          = reserved "type-matcher"
 keywordTypePattern          = reserved "type-pattern"
+keywordTypeVar              = reserved "type-var"
 keywordDefineTypeOf         = reserved "define-type-of"
 
 
