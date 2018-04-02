@@ -207,7 +207,8 @@ import qualified Data.Map.Strict as MS
 -- TCFun a b is a function which have arbitrary length args like (+ 1 2 3 4).
 -- All TCFun arguments have same type a.
 data Type = TypeChar | TypeString | TypeBool | TypeInt | TypeVar TypeVarIndex | TypeStar |
-            TypeFun Type Type | TypeTuple [Type] | TypeCollection Type | TypePattern Type | TypeMatcher Type
+            TypeFun Type Type | TypeTuple [Type] | TypeCollection Type | TypePattern Type |
+            TypeMatcher Type | TypeMatcherClause Type
             deriving (Show,Eq)
 type TypeVarIndex = Integer
 
