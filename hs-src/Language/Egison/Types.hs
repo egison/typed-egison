@@ -144,37 +144,42 @@ instantiateTypeScheme (TypeScheme tvis ty) = do
   return $ applySub sub ty
 
 
+pppToSub :: TypeSchemeEnvironment -> Type -> EE.PrimitivePatPattern -> MakeSubstitionM (Substitution, Type, Type)
+pppToSub = undefined
+
+
 -- There is TypeEnvironment in return value. 
 -- This is because new variables in pattern can be used in return expression.
 -- For example, look following Egison program.
 -- (match-all {1 2 3} (list integer) [<cons $x $xs> [x xs]])
 -- $x and $xs is used in [x xs].
 -- So we must bind all new variables($x,$xs) in the pattern to the environment.
-patternToSub :: TypeSchemeEnvironment -> Type -> EE.EgisonPattern -> MakeSubstitionM (Substitution, TypeSchemeEnvironment, Type)
+patternToSub :: TypeSchemeEnvironment -> Type -> EE.EgisonPattern -> MakeSubstitionM (Substitution, Type, TypeSchemeEnvironment)
 patternToSub env (TypePattern ty) (EE.ValuePat exp) = do
   (sub1, ty1) <- exprToSub' env ty exp
   sub2 <- unifySub $ (ty,ty1) : sub1
-  return (sub2, env, applySub sub2 (TypePattern ty1))
+  return (sub2, applySub sub2 (TypePattern ty1), env)
 patternToSub env (TypePattern ty) (EE.PatVar var) = do
   tv <- getNewTypeVar
   let env1 = (var,TypeScheme [] tv) : env
   let sub = [(ty, tv)]
-  return (sub, env1, applySub sub (TypePattern ty))
+  return (sub, applySub sub (TypePattern ty), env1)
 patternToSub env (TypePattern ty) (EE.InductivePat pc pats) = do
   pctype <- lookupTypeSchemeEnv (EE.Var [pc]) env >>= instantiateTypeScheme
   (sub1, env1, tys1) <- f env pats
   sub2 <- unifySub $ (pctype, TypeFun (TypeTuple tys1) (TypePattern ty)) : sub1
-  return (sub2, env1, applySub sub2 (TypePattern ty))
+  return (sub2, applySub sub2 (TypePattern ty), env1)
   where
     f :: TypeSchemeEnvironment -> [EE.EgisonPattern] -> MakeSubstitionM (Substitution, TypeSchemeEnvironment, [Type])
     f env [] = return ([], env, [])
     f env (p:rest) = do
       ty1 <- getNewTypeVar
-      (sub2,env2,ty2) <- patternToSub env (TypePattern ty1) p
+      (sub2,ty2,env2) <- patternToSub env (TypePattern ty1) p
       (sub3,env3,tys3) <- f env2 rest
       return ((TypePattern ty1,ty2) : sub3, env3, ty2:tys3)
-patternToSub _ (TypePattern _) _ = return ([], [], TypeStar)
+patternToSub _ (TypePattern _) _ = return ([], TypeStar, [])
 patternToSub _ ty _ = throwError $ "Pattern is type as no pattern type " ++ show ty
+
 
 exprToSub' :: TypeSchemeEnvironment -> Type -> EE.Expr -> MakeSubstitionM (Substitution, Type)
 exprToSub' env ty (EE.CharExpr _ ) = return ([(ty,TypeChar)], TypeChar)
@@ -260,7 +265,7 @@ exprToSub' env ty (EE.MatchAllExpr dt mt (pt,ex)) = do
     tvex <- getNewTypeVar
     (sub1, ty1) <- exprToSub' env tvdt dt
     (sub2, ty2) <- exprToSub' env (TypeMatcher tvdt) mt
-    (sub3, env1, ty3) <- patternToSub env (TypePattern tvdt) pt
+    (sub3, ty3, env1) <- patternToSub env (TypePattern tvdt) pt
     (sub4, ty4) <- exprToSub' env1 tvex ex
     sub5 <- unifySub $ (ty1, tvdt) : (ty2,TypeMatcher tvdt) : (ty3,TypePattern tvdt) : (ty4, tvex) : (ty,TypeCollection tvex) : sub1 ++ sub2 ++ sub3 ++ sub4
     return (sub5, applySub sub5 ty)
