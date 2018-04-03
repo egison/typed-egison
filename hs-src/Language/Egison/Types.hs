@@ -34,6 +34,8 @@ type Substitution = [Restriction]
 type TypeSchemeEnvironment = [(EE.Var,TypeScheme)]
 type MakeSubstitionM = ExceptT String (State TypeVarIndex)
 
+unusedPrefix = "youmustnotuse"
+
 checkTopExpr :: EE.Env -> EE.TopExpr -> Either String (Substitution, Type)
 checkTopExpr env (EE.Test e) = exprToSub env e
 checkTopExpr env (EE.Define (EE.VarWithIndexType vn _) exp) =
@@ -81,7 +83,7 @@ applySub _ t = t
 freeTypeVarIndex :: Type -> [TypeVarIndex]
 freeTypeVarIndex = nub . freeTypeVarIndex'
     where
-        freeTypeVarIndex' (TypeVar i) = [i]
+        freeTypeVarIndex' (TypeVar i) = if 'a' <= head i && head i <= 'z' then [i] else []
         freeTypeVarIndex' (TypeFun t1 t2) = freeTypeVarIndex' t1 ++ freeTypeVarIndex' t2
         freeTypeVarIndex' (TypeTuple ts) = concatMap freeTypeVarIndex' ts
         freeTypeVarIndex' (TypeCollection t1) = freeTypeVarIndex' t1
@@ -135,7 +137,7 @@ getNewTypeVar :: MakeSubstitionM Type
 getNewTypeVar = do
   i <- get
   put (nextString i)
-  return $ TypeVar i
+  return $ TypeVar $ unusedPrefix ++ i
 
 innersToExprs :: [EE.InnerExpr] -> [EE.Expr]
 innersToExprs [] = []
@@ -197,7 +199,7 @@ exprToSub' env ty (EE.BoolExpr _) = return ([(ty,TypeBool)], TypeBool)
 exprToSub' env ty (EE.IntegerExpr _) = return ([(ty,TypeInt)], TypeInt)
 exprToSub' env ty (EE.VarExpr vn) = do
     ty' <- lookupTypeSchemeEnv vn env >>= instantiateTypeScheme
-    sub <- unifySub [(trace ("vn = " ++ show vn ++ " ty' = " ++ show ty') ty',ty)]
+    sub <- unifySub [(ty',ty)]
     return (sub, applySub sub ty')
 exprToSub' env ty (EE.IfExpr e1 e2 e3) = do
     let cb = (\x -> throwError "The condition of if expression is not Bool")

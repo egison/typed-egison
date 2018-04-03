@@ -135,8 +135,10 @@ topExpr = try (Test <$> expr)
                    <|> loadExpr
                    <|> implicitConversionExpr
                    <|> absoluteImplicitConversionExpr
-                   <|> defineTypeOfExpr))
+                   <|> defineTypeOfExpr
+                   <|> defineADTExpr))
       <?> "top-level expression"
+
 
 defineExpr :: Parser TopExpr
 defineExpr = try (parens (keywordDefine >> Define <$> varNameWithIndexType <*> expr))
@@ -204,6 +206,19 @@ parseTypeTuple = keywordTypeTuple >> TypeTuple <$> sepEndBy parseType whiteSpace
 
 parseTypeFun :: Parser Type
 parseTypeFun = keywordTypeFun >> TypeFun <$> (parens parseTypeTuple) <*> parseType
+
+defineADTExpr :: Parser TopExpr
+defineADTExpr = do
+  keywordDefineADT
+  tyname <- upperName
+  constrs <- sepEndBy1 (parens parseConstr) whiteSpace
+  return $ DefineADT tyname constrs
+    where
+      parseConstr = do
+        n <- upperName
+        ts <-sepEndBy1 parseType whiteSpace
+        return (n,TypeTuple ts)
+
 
 exprs :: Parser [Expr]
 exprs = endBy expr whiteSpace
@@ -912,7 +927,9 @@ reservedKeywords =
   , "type-fun"
   , "type-matcher"
   , "type-pattern"
-  , "type-var"]
+  , "type-var"
+  , "define-ADT"]
+
 
 
 reservedOperators :: [String]
@@ -1011,6 +1028,7 @@ keywordTypeMatcher          = reserved "type-matcher"
 keywordTypePattern          = reserved "type-pattern"
 keywordTypeVar              = reserved "type-var"
 keywordDefineTypeOf         = reserved "define-type-of"
+keywordDefineADT            = reserved "define-ADT"
 
 
 sign :: Num a => Parser (a -> a)

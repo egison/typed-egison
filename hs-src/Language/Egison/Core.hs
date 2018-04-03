@@ -67,6 +67,7 @@ import qualified Data.Text as T
 import Language.Egison.Expressions
 import Language.Egison.Parser
 import Language.Egison.Types
+import Data.Char (ord, chr)
 import Debug.Trace
 
 --
@@ -152,6 +153,14 @@ evalTopExpr env (Execute expr) = do
 evalTopExpr env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv [(t1,t2,e)] env)
 evalTopExpr env (AbsoluteImplicitConversion t1 t2 e) = return (Nothing, extendEnvAbsImplConv [(t1,t2,e)] env)
 evalTopExpr env (DefineTypeOf v t) = return (Nothing, extendEnvType [(v,t)] env)
+evalTopExpr env (DefineADT adtname cts) = do
+  let cs = map constr cts
+  let ps = map pconstr cts
+  return (Nothing, extendEnvType (cs ++ ps) env)
+    where constr (s,t) = (Var [s], TypeFun t (TypeVar adtname))
+          pconstr (s,t) = (Var [lower s], TypeFun (ttop t) (TypePattern (TypeVar adtname)))
+          lower (c:r) = (chr (ord c - (ord 'A' - ord 'a'))) : r
+          ttop (TypeTuple ts) = TypeTuple $ map TypePattern ts
 
 evalExpr :: Env -> Expr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c

@@ -3,4 +3,4 @@
 (define-type-of $nil (type-pattern (type-collection (type-var a))))
 (define-type-of $Cons (type-fun (type-tuple (type-var a) (type-collection (type-var a))) (type-collection (type-var a))))
 (define-type-of $Nil (type-collection (type-var a)))
-
+(define $unordered-pair (lambda [$a] (matcher {[<cons $ <cons $ <nil>>> [a a] {[<Cons $x <Cons $y <Nil>>> {[x y] [y x]}]}] [$ [something] {[$tgt {tgt}]}]})))
