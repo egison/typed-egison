@@ -23,6 +23,7 @@ import Debug.Trace
 import Data.IORef (newIORef, readIORef, writeIORef, IORef)
 import System.IO.Unsafe (unsafePerformIO)
 import Debug.Trace
+import Data.Char (ord,chr)
 
 -- First element of Restriction will be type valiable.
 -- Second element of Restriction is what the first element refer.
@@ -40,7 +41,14 @@ checkTopExpr env (EE.Define (EE.VarWithIndexType vn _) exp) =
 checkTopExpr env _ = return ([], TypeStar)
 
 typeVarIndexCache :: IORef TypeVarIndex
-typeVarIndexCache = unsafePerformIO $ newIORef 1
+typeVarIndexCache = unsafePerformIO $ newIORef "b"
+
+nextString :: String -> String
+nextString s = itos (stoi s + 1)
+  where
+    stoi "" = 0
+    stoi (a:rest) = (ord a - ord 'a') + stoi rest * 26
+    itos i = if i < 26 then [chr (i + ord 'a')] else chr (i`mod`26 + ord 'a') : itos (i`div`26)
 
 exprToSub :: EE.Env -> EE.Expr -> Either String (Substitution, Type)
 exprToSub env exp = unsafePerformIO $ exprToSubIO env exp
@@ -48,8 +56,8 @@ exprToSub env exp = unsafePerformIO $ exprToSubIO env exp
 exprToSubIO :: EE.Env -> EE.Expr -> IO (Either String (Substitution, Type))
 exprToSubIO env exp = do
   i <- readIORef typeVarIndexCache
-  let (a,s) = runState (runExceptT $ exprToSub' env1 (TypeVar 0) exp) i
-  writeIORef typeVarIndexCache (s+1)
+  let (a,s) = runState (runExceptT $ exprToSub' env1 (TypeVar "a") exp) i
+  writeIORef typeVarIndexCache (nextString s)
   return a
   where ty2tys ty = TypeScheme (freeTypeVarIndex ty) ty
         env1 = map (\(v,t) -> (v,ty2tys t)) (EE.envType env)
@@ -126,7 +134,7 @@ unifySub ((t1, t2) : r)
 getNewTypeVar :: MakeSubstitionM Type
 getNewTypeVar = do
   i <- get
-  put (i+1)
+  put (nextString i)
   return $ TypeVar i
 
 innersToExprs :: [EE.InnerExpr] -> [EE.Expr]

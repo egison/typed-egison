@@ -188,7 +188,7 @@ parseType = (try keywordTypeChar >> return TypeChar)
                   <|> try parseTypeCollection
                   <|> try parseTypeTuple
                   <|> try parseTypeFun
-                  <|> try (keywordTypeVar >> TypeVar <$> naturalLiteral)))
+                  <|> try (keywordTypeVar >> TypeVar <$> lowerName)))
 
 parseTypeMatcher :: Parser Type
 parseTypeMatcher = keywordTypeMatcher >> TypeMatcher <$> parseType

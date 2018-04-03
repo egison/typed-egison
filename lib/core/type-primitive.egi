@@ -1,0 +1,6 @@
+(define-type-of $b.+ (type-fun (type-tuple type-int type-int) type-int))
+(define-type-of $cons (type-fun (type-tuple (type-pattern (type-var a)) (type-pattern (type-collection (type-var a)))) (type-pattern (type-collection (type-var a)))))
+(define-type-of $nil (type-pattern (type-collection (type-var a))))
+(define-type-of $Cons (type-fun (type-tuple (type-var a) (type-collection (type-var a))) (type-collection (type-var a))))
+(define-type-of $Nil (type-collection (type-var a)))
+

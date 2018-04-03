@@ -210,7 +210,9 @@ data Type = TypeChar | TypeString | TypeBool | TypeInt | TypeVar TypeVarIndex | 
             TypeFun Type Type | TypeTuple [Type] | TypeCollection Type | TypePattern Type |
             TypeMatcher Type | TypeMatcherClause Type
             deriving (Show,Eq)
-type TypeVarIndex = Integer
+-- if the head of a TypeVarIndex is capital case, 
+-- it is the user defined type name.
+type TypeVarIndex = String
 
 
 --
