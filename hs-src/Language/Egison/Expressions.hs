@@ -195,6 +195,7 @@ import Numeric
 
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Map.Strict as MS
+import Data.Char (ord)
 
 --
 -- Types
@@ -209,11 +210,24 @@ import qualified Data.Map.Strict as MS
 data Type = TypeChar | TypeString | TypeBool | TypeInt | TypeVar TypeVarIndex | TypeStar |
             TypeFun Type Type | TypeTuple [Type] | TypeCollection Type | TypePattern Type |
             TypeMatcher Type | TypeMatcherClause Type
-            deriving (Show,Eq)
+            deriving (Eq)
 -- if the head of a TypeVarIndex is capital case, 
 -- it is the user defined type name.
 type TypeVarIndex = String
 
+instance Show Type where
+  show TypeChar = "Char"
+  show TypeString = "String"
+  show TypeBool = "Bool"
+  show TypeInt = "Integer"
+  show (TypeVar s) = s
+  show TypeStar = "Any"
+  show (TypeFun t1 t2) = "(Fun " ++ show t1 ++ " " ++ show t2 ++ ")"
+  show (TypeTuple ts) = "(Tuple" ++ (foldl (++) "" (map (\x -> " " ++ show x) ts)) ++ ")"
+  show (TypeCollection t) = "(Collection " ++ show t ++ ")"
+  show (TypePattern t) = "(Pattern " ++ show t ++ ")"
+  show (TypeMatcher t) = "(Matcher " ++ show t ++ ")"
+  show (TypeMatcherClause t) = "(MatcherClause " ++ show t ++ ")"
 
 --
 -- Expressions
