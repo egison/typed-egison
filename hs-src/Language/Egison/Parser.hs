@@ -190,7 +190,8 @@ parseType = (try keywordTypeChar >> return TypeChar)
                   <|> try parseTypeCollection
                   <|> try parseTypeTuple
                   <|> try parseTypeFun
-                  <|> try (keywordTypeVar >> TypeVar <$> lowerName)))
+                  <|> try (keywordTypeVar >> TypeVar <$> lowerName)
+                  <|> try (keywordTypeVar >> TypeVar <$> upperName)))
 
 parseTypeMatcher :: Parser Type
 parseTypeMatcher = keywordTypeMatcher >> TypeMatcher <$> parseType
@@ -211,7 +212,7 @@ defineADTExpr :: Parser TopExpr
 defineADTExpr = do
   keywordDefineADT
   tyname <- upperName
-  constrs <- sepEndBy1 (parens parseConstr) whiteSpace
+  constrs <- sepEndBy1 (angles parseConstr) whiteSpace
   return $ DefineADT tyname constrs
     where
       parseConstr = do
@@ -918,16 +919,16 @@ reservedKeywords =
   , "undefined"
   , "implicit-conversion"
   , "define-type-of"
-  , "type-char"
-  , "type-string"
-  , "type-bool"
-  , "type-int"
-  , "type-tuple"
-  , "type-collection"
-  , "type-fun"
-  , "type-matcher"
-  , "type-pattern"
-  , "type-var"
+  , "Char"
+  , "String"
+  , "Bool"
+  , "Integer"
+  , "Tuple"
+  , "Collection"
+  , "Fun"
+  , "Matcher"
+  , "Pattern"
+  , "TypeVar"
   , "define-ADT"]
 
 
@@ -1017,16 +1018,16 @@ keywordUserrefsNew          = reserved "user-refs!"
 keywordFunction             = reserved "function"
 keywordImplConv             = reserved "implicit-conversion"
 keywordAbsImplConv          = reserved "absolute-implicit-conversion"
-keywordTypeChar             = reserved "type-char"
-keywordTypeString           = reserved "type-string"
-keywordTypeBool             = reserved "type-bool"
-keywordTypeInt              = reserved "type-int"
-keywordTypeTuple            = reserved "type-tuple"
-keywordTypeCollection       = reserved "type-collection"
-keywordTypeFun              = reserved "type-fun"
-keywordTypeMatcher          = reserved "type-matcher"
-keywordTypePattern          = reserved "type-pattern"
-keywordTypeVar              = reserved "type-var"
+keywordTypeChar             = reserved "Char"
+keywordTypeString           = reserved "String"
+keywordTypeBool             = reserved "Bool"
+keywordTypeInt              = reserved "Integer"
+keywordTypeTuple            = reserved "Tuple"
+keywordTypeCollection       = reserved "Collection"
+keywordTypeFun              = reserved "Fun"
+keywordTypeMatcher          = reserved "Matcher"
+keywordTypePattern          = reserved "Pattern"
+keywordTypeVar              = reserved "TypeVar"
 keywordDefineTypeOf         = reserved "define-type-of"
 keywordDefineADT            = reserved "define-ADT"
 

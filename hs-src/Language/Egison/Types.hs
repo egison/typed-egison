@@ -34,13 +34,22 @@ type Substitution = [Restriction]
 type TypeSchemeEnvironment = [(EE.Var,TypeScheme)]
 type MakeSubstitionM = ExceptT String (State TypeVarIndex)
 
-unusedPrefix = "youmustnotuse"
+unusedPrefix = "avoidduplicationprefix"
+finalExprTypeVar = "thisisfinalexprtypevar"
 
-checkTopExpr :: EE.Env -> EE.TopExpr -> Either String (Substitution, Type)
-checkTopExpr env (EE.Test e) = exprToSub env e
+checkTopExpr :: EE.Env -> EE.TopExpr -> Either String Type
+checkTopExpr env (EE.Test e) = do
+  (s,_) <- exprToSub env e
+  let r = findAns (trace (show s) s)
+  return $ (trace (show r) r)
+    where findAns [] = TypeStar
+          findAns ((t1,t2):r)
+            | t1 == TypeVar finalExprTypeVar = t2
+            | t2 == TypeVar finalExprTypeVar = t1
+            | otherwise = findAns r
 checkTopExpr env (EE.Define (EE.VarWithIndexType vn _) exp) =
   checkTopExpr env (EE.Test (EE.LetRecExpr [([EE.Var [vn]],exp)] exp))
-checkTopExpr env _ = return ([], TypeStar)
+checkTopExpr env _ = Right TypeStar
 
 typeVarIndexCache :: IORef TypeVarIndex
 typeVarIndexCache = unsafePerformIO $ newIORef "b"
@@ -58,7 +67,7 @@ exprToSub env exp = unsafePerformIO $ exprToSubIO env exp
 exprToSubIO :: EE.Env -> EE.Expr -> IO (Either String (Substitution, Type))
 exprToSubIO env exp = do
   i <- readIORef typeVarIndexCache
-  let (a,s) = runState (runExceptT $ exprToSub' env1 (TypeVar "a") exp) i
+  let (a,s) = runState (runExceptT $ exprToSub' env1 (TypeVar finalExprTypeVar) exp) i
   writeIORef typeVarIndexCache (nextString s)
   return a
   where ty2tys ty = TypeScheme (freeTypeVarIndex ty) ty

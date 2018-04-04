@@ -135,7 +135,7 @@ evalTopExprsWithoutLoad env (t:rest) = do
 evalTopExpr :: Env -> TopExpr -> EgisonM (Maybe String, Env)
 evalTopExpr env (Define name expr) =
   case typecheck of
-    Right (_,ty) ->
+    Right ty ->
       let env1 = extendEnvType [((stringToVar $ show name),ty)] env in
       recursiveBind env1 [((stringToVar $ show name), expr)] >>= return . ((,) Nothing)
     Left err -> throwError $ Default err
