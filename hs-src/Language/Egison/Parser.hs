@@ -136,7 +136,8 @@ topExpr = try (Test <$> expr)
                    <|> implicitConversionExpr
                    <|> absoluteImplicitConversionExpr
                    <|> defineTypeOfExpr
-                   <|> defineADTExpr))
+                   <|> defineADTExpr
+                   <|> printTypeOf))
       <?> "top-level expression"
 
 
@@ -219,6 +220,12 @@ defineADTExpr = do
         n <- upperName
         ts <-sepEndBy1 parseType whiteSpace
         return (n,TypeTuple ts)
+
+printTypeOf :: Parser TopExpr
+printTypeOf = do
+  keywordPrintTypeOf
+  vn <- identVar
+  return (PrintTypeOf vn)
 
 
 exprs :: Parser [Expr]
@@ -929,7 +936,8 @@ reservedKeywords =
   , "Matcher"
   , "Pattern"
   , "TypeVar"
-  , "define-ADT"]
+  , "define-ADT"
+  , "print-type-of" ]
 
 
 
@@ -1030,6 +1038,7 @@ keywordTypePattern          = reserved "Pattern"
 keywordTypeVar              = reserved "TypeVar"
 keywordDefineTypeOf         = reserved "define-type-of"
 keywordDefineADT            = reserved "define-ADT"
+keywordPrintTypeOf          = reserved "print-type-of"
 
 
 sign :: Num a => Parser (a -> a)
