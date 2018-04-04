@@ -93,6 +93,7 @@ module Language.Egison.Expressions
     , envType
     , extendEnvImplConv
     , refEnvImplConv
+    , refEnvType
     , extendEnvType
     , deleteEnvType
     , extendEnvAbsImplConv
@@ -1635,6 +1636,9 @@ extendEnvAbsImplConv is e = e { envAbsImplConv=is++envAbsImplConv e }
 
 refEnvAbsImplConv :: Env -> Type -> [(Type, Expr)]
 refEnvAbsImplConv e t = map (\(t1,t2,e) -> (t2,e)) $ filter (\(t1,_,_) -> t1 == t) $ envAbsImplConv e
+
+refEnvType :: Var -> Env -> Maybe Type
+refEnvType v e = lookup v $ envType e
 
 extendEnvType :: [(Var,Type)] -> Env -> Env
 extendEnvType t e = e { envType = t ++ envType e }

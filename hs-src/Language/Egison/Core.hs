@@ -161,6 +161,9 @@ evalTopExpr env (DefineADT adtname cts) = do
           pconstr (s,t) = (Var [lower s], TypeFun (ttop t) (TypePattern (TypeVar adtname)))
           lower (c:r) = (chr (ord c - (ord 'A' - ord 'a'))) : r
           ttop (TypeTuple ts) = TypeTuple $ map TypePattern ts
+evalTopExpr env (PrintTypeOf vn) = 
+  maybe (throwError $ Default $ "Cannot find " ++ show vn ++ " in the environment.")
+    (\x -> return (Just (show x),env)) (refEnvType vn env)
 
 evalExpr :: Env -> Expr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c
