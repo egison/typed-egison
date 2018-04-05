@@ -557,7 +557,7 @@ argNames = return <$> argName
             <|> brackets (sepEndBy argName whiteSpace) 
 
 argName :: Parser Arg
-argName = try (char '$' >> ident >>= return . ScalarArg)
+argName = try (char '$' >> ident >>= return . TensorArg)
       <|> try (string "*$" >> ident >>= return . InvertedScalarArg)
       <|> try (char '%' >> ident >>= return . TensorArg)
 
@@ -585,7 +585,7 @@ applyExpr' = do
         let args' = rights args
             args'' = map f (zip args (annonVars 1 (length args)))
             args''' = map (VarExpr . stringToVar . (either id id)) args''
-        in return $ ApplyExpr (LambdaExpr (map ScalarArg (rights args'')) (LambdaExpr (map ScalarArg (lefts args'')) $ ApplyExpr func $ TupleExpr args''')) $ TupleExpr args'
+        in return $ ApplyExpr (LambdaExpr (map TensorArg (rights args'')) (LambdaExpr (map TensorArg (lefts args'')) $ ApplyExpr func $ TupleExpr args''')) $ TupleExpr args'
       | all (not . null) vars ->
         let ns = Set.fromList $ map read vars
             n = Set.size ns
@@ -594,7 +594,7 @@ applyExpr' = do
                let args' = rights args
                    args'' = map g (zip args (annonVars (n + 1) (length args)))
                    args''' = map (VarExpr . stringToVar . (either id id)) args''
-               in return $ ApplyExpr (LambdaExpr (map ScalarArg (rights args'')) (LambdaExpr (map ScalarArg (annonVars 1 n)) $ ApplyExpr func $ TupleExpr args''')) $ TupleExpr args'
+               in return $ ApplyExpr (LambdaExpr (map TensorArg (rights args'')) (LambdaExpr (map TensorArg (annonVars 1 n)) $ ApplyExpr func $ TupleExpr args''')) $ TupleExpr args'
              else fail "invalid partial application"
       | otherwise -> fail "invalid partial application"
  where
