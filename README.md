@@ -47,12 +47,43 @@ This means `(lambda [$x] (b.+ x 10))` takes a tuple of integer and return intege
 
 ### Pattern, Matcher
 These two types are deeply related with `match-all` syntax.
+In short, `match-all` looks like following.
+```
+(match-all "Data" "How to match" ["Pattern" "Result"])
+"Collection of Result"
+```
+
+The following is an example of pattern matching in Egison.
+```
+> (match-all <Pair 2 5> (unorderd-pair integer) [<pair ,5 $x> x])
+{2}
+```
+You don't have to understand details of <Pair 2 5>, (unorderd-pair integer) and <pair ,5 $x>.
+What I want to teach in this section is types of these parts. These types are
+```
+<Pair 2 5> :: PairII
+(unorderd-pair integer) :: Matcher PairII
+<pair ,5 $x> :: Pattern PairII
+```
+PairII is user-defined ADT. I will explain about ADT in later section.
+
+In this example, `match-all` takes 3 arguments and their types are PairII, (Matcher PairII), (Tuple (Pattern PairII) Integer) respectively and return (Collection Integer). More generally, `match-all` takes 3 arguments, a, (Matcher a), (Tuple (Pattern a, b)) and return (Collection b). a and b are variables which refer some types like Integer, Bool or PairII.
+
+In rough words, `match-all` has this type
+```
+(Fun (Tuple (TypeVar a), (Matcher (TypeVar a)), (Tuple (Pattern (TypeVar a) (TypeVar b)))) (Collection (TypeVar b)))
+```
+
+Precisely, this is wrong but it is OK. I will explain details of `match-all` in later section.
+
+## Abstract Data Type
+As you can see in the previous section, you can define abstract data type in Egison.
 
 ## Implicit Conversion
 
-## Abstract Data Type
-
 ## MatcherClause
+
+## Details of `match-all`
 
 ## Let Polymorphism
 
