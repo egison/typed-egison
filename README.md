@@ -3,8 +3,8 @@ This is a derivation of Egison.
 The purpose of this project is to make Egison a static typed language.
 This document is focused on the type system of Egison.
 
-## Primitive Types
-The primitive types of Egison are
+## Built-in Types
+The bult-in types of Egison are
 Char, String, Bool, Integer, Tuple, Collection, Fun, Pattern, Matcher, MatcherClause, TypeVar and Any.
 
 ### Char, String, Bool, Integer
@@ -22,14 +22,14 @@ BoolExpr True :: Bool
 > (print-type-of 42)
 IntegerExpr 42 :: Integer
 ```
-## Tuple
+### Tuple
 Tuple is a set of some types.
 ```
 > (print-type-of [10 "hoge"])
 TupleExpr [IntegerExpr 10,StringExpr "hoge"] :: (Tuple Integer String)
 ```
 
-## Collection
+### Collection
 Collection is used to represent a data which contains many same type datum.
 ```
 > (print-type-of {10 20 40})
@@ -38,6 +38,14 @@ CollectionExpr [ElementExpr (IntegerExpr 10),ElementExpr (IntegerExpr 20),Elemen
 
 ## Fun
 Fun is a abbreviation of function of curse.
+Functions in Egison are take a tuple and return a value.
+```
+> (print-type-of (lambda [$x] (b.+ x 10)))
+LambdaExpr [TensorArg "x"] (ApplyExpr (VarExpr (Var ["b","+"])) (TupleExpr [VarExpr (Var ["x"]),IntegerExpr 10])) :: (Fun (Tuple Integer) Integer)
+```
+This means `(lambda [$x] (b.+ x 10))` takes a tuple of integer and return integer.
+
+### Pattern, Matcher, MatcherClause
 
 ## Implicit Conversion
 
