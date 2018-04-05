@@ -4,6 +4,7 @@
 (define-type-of $b./ (Fun (Tuple Integer Integer) Integer))
 (define-type-of $eq? (Fun (Tuple (TypeVar a) (TypeVar a)) Bool))
 
+; Following codes are append for README.md. If you want, remove them.
 (define $eq
   (matcher-dfs
     {[,$val []
@@ -33,12 +34,13 @@
 (define-type-of $nioj
  (Fun (Tuple (Pattern (Collection (TypeVar a))) (Pattern (Collection (TypeVar a))))
   (Pattern (Collection (TypeVar a)))))
-(define-ADT Pair <Pair Integer Integer>)
-(define $unpair
+
+
+
+(define-ADT PairII <Pair Integer Integer>)
+(define $unorderd-pair
  (lambda [$a]
   (matcher {[<pair $ $> [a a]
    {[<Pair $x $y> {[x y] [y x]}]}]
    [$ [something] {[$tgt {tgt}]}]})))
 (define-type-of $integer (Matcher Integer))
-(define $res (match-all <Pair 2 5> (unpair integer)
- [<pair ,5 $x> x]))

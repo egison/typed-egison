@@ -221,7 +221,7 @@ instance Show Type where
   show TypeString = "String"
   show TypeBool = "Bool"
   show TypeInt = "Integer"
-  show (TypeVar s) = "(TypeVar " ++ s ++ ")"
+  show (TypeVar s) = s
   show TypeStar = "Any"
   show (TypeFun t1 t2) = "(Fun " ++ show t1 ++ " " ++ show t2 ++ ")"
   show (TypeTuple ts) = "(Tuple" ++ (foldl (++) "" (map (\x -> " " ++ show x) ts)) ++ ")"

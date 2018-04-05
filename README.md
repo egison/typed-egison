@@ -1,7 +1,22 @@
 # Typed Egison
 This is a derivation of Egison.  
 The purpose of this project is to make Egison a static typed language.  
-This document is focused on the type system of Egison.
+This document is focused on the type system of Egison and written for developer of Egison.  
+You can test codes started with `>` in the Typed Egison interpreter.
+
+## How to install and test
+I assume you use linux.
+Please use following commands to build Typed Egison.
+```
+git clone git@github.com:egison/typed-egison.git
+stack init
+stack solver
+stack build
+```
+After build, you can start repl by
+```
+stack exec egison
+```
 
 ## Built-in Types
 The bult-in types of Egison are
@@ -65,13 +80,16 @@ What I want to teach in this section is types of these parts. These types are
 (unorderd-pair integer) :: Matcher PairII
 <pair ,5 $x> :: Pattern PairII
 ```
-PairII is user-defined ADT. I will explain about ADT in later section.
+`PairII` is user-defined ADT. I will explain about ADT in later section.
 
-In this example, `match-all` takes 3 arguments and their types are PairII, (Matcher PairII), (Tuple (Pattern PairII) Integer) respectively and return (Collection Integer). More generally, `match-all` takes 3 arguments, a, (Matcher a), (Tuple (Pattern a, b)) and return (Collection b). a and b are variables which refer some types like Integer, Bool or PairII.
+In this example, `match-all` takes 3 arguments.  
+Their types are `PairII`, `(Matcher PairII)`, `(Tuple (Pattern PairII) Integer)` respectively and return `(Collection Integer)`.   
+More generally, `match-all` takes 3 arguments, `a`, `(Matcher a)`, `(Tuple (Pattern a, b))` and return `(Collection b)`.  
+ `a` and `b` are variables which refer some types like `Integer`, `Bool` or `PairII`.
 
 In rough words, `match-all` has this type
 ```
-(Fun (Tuple (TypeVar a), (Matcher (TypeVar a)), (Tuple (Pattern (TypeVar a) (TypeVar b)))) (Collection (TypeVar b)))
+(Fun (Tuple a (Matcher a) (Tuple (Pattern a) b)) (Collection b))
 ```
 
 Precisely, this is wrong but it is OK. I will explain details of `match-all` in later section.
@@ -83,34 +101,52 @@ As you can see in the previous section, you can define abstract data type in Egi
 (define-ADT "Name of type" <"Name of type constructor" "type1" "type2" ...> <"Name of type constructor" ...>)
 ```
 
+The name of type and names of type constructors must start from captal case.  
 For example, `PairII` is defined using following code.
 ```
 (define-ADT PairII <Pair Integer Integer>)
 ```
-After you execute above command, data constructor Pair and pattern constructor pair will be defined.
+After you execute above command, data constructor `Pair` and pattern constructor `pair` will be defined.   
+Names of pattern constructors are same with data constructors but pattern constructors are begin with small cases.
 ```
 > (print-type-of Pair)
-Pair :: (Fun (Tuple Integer Integer) (TypeVar PairII))
+Pair :: (Fun (Tuple Integer Integer) PairII
 > (print-type-of pair)
-pair :: (Fun (Tuple (Pattern Integer) (Pattern Integer)) (Pattern (TypeVar PairII)))
+pair :: (Fun (Tuple (Pattern Integer) (Pattern Integer)) (Pattern PairII))
 ```
-Please be carefull. Pattern constructor is defined ***automatically***. When you define ADT, you must be carefull not to conflict names. You can use `print-type-of` to check whether a name is used or not.
+Please be carefull. Pattern constructor is defined ***automatically***.   
+When you define ADT, you must be carefull not to conflict names.   
+You can use `print-type-of` to check whether a name is used or not.
+```
+> (print-type-of unusedname)
+Cannot decide the type of unusedname
+```
 
-## Implicit Conversion
-
-## Details of `match-all`
-
-## Let Polymorphism
-
-## Type declaration for built-in functions
-Built-in functions (ex. `b.+`, `eq?`) are defined in Egison interpreter
-and we cannot infer the type of these functions.
-So, we must give the type declaration of these functions to type checker.
-For such purpose, we can use `define-type-of`.
+## Advanced Topics
+### Type declaration for built-in functions
+Built-in functions (ex. `b.+`, `eq?`) are defined in Egison interpreter.  
+So the type checker cannot infer the type of these functions.  
+We must give the type declaration of these functions to type checker.  
+For such purpose, we can use `define-type-of`.  
 When you write
 ```
 (define-type-of $b.+ (Fun (Tnple Integer Integer) Integer))
 ```
-type checker believe `b.+` has `(Fun (Tnple Integer Integer) Integer)` type.
-For more examples, please check lib/core/type-primitive.egi.
-Type checker loads this file when it start.
+type checker believe `b.+` has `(Fun (Tnple Integer Integer) Integer)` type.  
+For more examples, please check `lib/core/type-primitive.egi`.  
+Type checker loads this file when it starts.  
+
+***Caution***  
+When you use ADT or type variables in `define-type-of`, you must write like `(TypeVar Pair)`.
+For examples,
+```
+(define-type-of $eq? (Fun (Tuple (TypeVar a) (TypeVar a)) Bool))
+(define-type-of somevalue (TypeVar PairII))
+```
+
+### Theoritical Base of Type System of Typed Egison
+
+
+### Implicit Conversion
+
+### Details of `match-all`
