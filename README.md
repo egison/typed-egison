@@ -58,7 +58,7 @@ The following is an example of pattern matching in Egison.
 > (match-all <Pair 2 5> (unorderd-pair integer) [<pair ,5 $x> x])
 {2}
 ```
-You don't have to understand details of <Pair 2 5>, (unorderd-pair integer) and <pair ,5 $x>.
+You don't have to understand details of `<Pair 2 5>`, `(unorderd-pair integer)` and `<pair ,5 $x>`.
 What I want to teach in this section is types of these parts. These types are
 ```
 <Pair 2 5> :: PairII
@@ -78,6 +78,23 @@ Precisely, this is wrong but it is OK. I will explain details of `match-all` in 
 
 ## Abstract Data Type
 As you can see in the previous section, you can define abstract data type in Egison.
+`define-ADT` is a syntax for defining ADT.
+```
+(define-ADT "Name of type" <"Name of type constructor" "type1" "type2" ...> <"Name of type constructor" ...>)
+```
+
+For example, `PairII` is defined using following code.
+```
+(define-ADT PairII <Pair Integer Integer>)
+```
+After you execute above command, data constructor Pair and pattern constructor pair will be defined.
+```
+> (print-type-of Pair)
+(Fun (Tuple Integer Integer) (TypeVar PairII))
+> (print-type-of pair)
+(Fun (Tuple (Pattern Integer) (Pattern Integer)) (Pattern (TypeVar PairII)))
+```
+Please be carefull. Pattern constructor is defined ***automatically***. When you define ADT, you must be carefull not to conflict names. You can use `print-type-of` to check whether a name is used or not.
 
 ## Implicit Conversion
 
