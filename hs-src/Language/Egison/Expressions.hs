@@ -333,7 +333,7 @@ data Expr =
 
   | SomethingExpr
   | UndefinedExpr
- deriving (Show, Eq)
+ deriving (Eq)
 
 data Arg =
     ScalarArg String
@@ -1209,20 +1209,19 @@ type Matcher = EgisonValue
 
 type PrimitiveFunc = WHNFData -> EgisonM WHNFData
 
--- instance Show Expr where
---   show (CharExpr c) = "c#" ++ [c]
---   show (StringExpr str) = "\"" ++ T.unpack str ++ "\""
---   show (BoolExpr True) = "#t"
---   show (BoolExpr False) = "#f"
---   show (IntegerExpr n) = show n
---   show (FloatExpr x y) = showComplexFloat x y
---   show (VarExpr name) = show name
---   show (PartialVarExpr n) = "%" ++ show n
---   show (FunctionExpr args) = "function [" ++ unwords (map show args) ++ "]"
---
---   show (ApplyExpr fn (TupleExpr [])) = "(" ++ show fn ++ ")"
---   show (ApplyExpr fn (TupleExpr args)) = "(" ++ show fn ++ " " ++ unwords (map show args) ++ ")"
---   show (ApplyExpr fn arg) = "(" ++ show fn ++ " " ++ show arg ++ ")"
+instance Show Expr where
+  show (CharExpr c) = "c#" ++ [c]
+  show (StringExpr str) = "\"" ++ T.unpack str ++ "\""
+  show (BoolExpr True) = "#t"
+  show (BoolExpr False) = "#f"
+  show (IntegerExpr n) = show n
+  show (FloatExpr x y) = showComplexFloat x y
+  show (VarExpr name) = show name
+  show (PartialVarExpr n) = "%" ++ show n
+  show (FunctionExpr args) = "function [" ++ unwords (map show args) ++ "]"
+  show (ApplyExpr fn (TupleExpr [])) = "(" ++ show fn ++ ")"
+  show (ApplyExpr fn (TupleExpr args)) = "(" ++ show fn ++ " " ++ unwords (map show args) ++ ")"
+  show (ApplyExpr fn arg) = "(" ++ show fn ++ " " ++ show arg ++ ")"
 
 
 instance Show EgisonValue where
@@ -1557,7 +1556,7 @@ data Env = Env { envExpr::MS.Map Var ObjectRef, envType::[(Var, Type)], envImplC
  deriving (Show)
 
 newtype Var = Var [String]
- deriving (Show, Eq, Ord)
+ deriving (Eq, Ord)
 
 data VarWithIndexType = VarWithIndexType String [Index ()]
  deriving (Eq)
@@ -1566,8 +1565,8 @@ type Binding = (Var, ObjectRef)
 data VarWithIndices = VarWithIndices String [Index String]
  deriving (Eq)
 
--- instance Show Var where
---   show (Var xs) = intercalate "." xs
+instance Show Var where
+  show (Var xs) = intercalate "." xs
 
 instance Show VarWithIndexType where
   show (VarWithIndexType x is) = x ++ concatMap show is
