@@ -1222,6 +1222,12 @@ instance Show Expr where
   show (ApplyExpr fn (TupleExpr [])) = "(" ++ show fn ++ ")"
   show (ApplyExpr fn (TupleExpr args)) = "(" ++ show fn ++ " " ++ unwords (map show args) ++ ")"
   show (ApplyExpr fn arg) = "(" ++ show fn ++ " " ++ show arg ++ ")"
+  show (TupleExpr es) = "[" ++ (intercalate " " (map show es)) ++ "]"
+  show (CollectionExpr es) = "{" ++ (intercalate " " (map show (f es))) ++ "}"
+    where
+      f [] = []
+      f (ElementExpr e:rest) = e:(f rest)
+      f ((SubCollectionExpr (CollectionExpr is)):rest) = f is ++ f rest
 
 
 instance Show EgisonValue where
