@@ -5,7 +5,7 @@ This document is focused on the type system of Egison.
 
 ## Built-in Types
 The bult-in types of Egison are
-Char, String, Bool, Integer, Tuple, Collection, Fun, Pattern, Matcher, MatcherClause, TypeVar and Any.
+Char, String, Bool, Integer, Tuple, Collection, Fun, Pattern, Matcher, TypeVar and Any.
 
 ### Char, String, Bool, Integer
 You can check the type of a expression using `print-type-of`.  
@@ -45,11 +45,14 @@ LambdaExpr [TensorArg "x"] (ApplyExpr (VarExpr (Var ["b","+"])) (TupleExpr [VarE
 ```
 This means `(lambda [$x] (b.+ x 10))` takes a tuple of integer and return integer.
 
-### Pattern, Matcher, MatcherClause
+### Pattern, Matcher
+These two types are deeply related with `match-all` syntax.
 
 ## Implicit Conversion
 
 ## Abstract Data Type
+
+## MatcherClause
 
 ## Let Polymorphism
 
