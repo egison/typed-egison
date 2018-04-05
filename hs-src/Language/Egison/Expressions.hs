@@ -339,7 +339,10 @@ data Arg =
     ScalarArg String
   | InvertedScalarArg String
   | TensorArg String
- deriving (Show, Eq)
+ deriving (Eq)
+
+instance Show Arg where
+  show (TensorArg s) = "$" ++ s
 
 data Index a =
     Subscript a
@@ -1228,6 +1231,7 @@ instance Show Expr where
       f [] = []
       f (ElementExpr e:rest) = e:(f rest)
       f ((SubCollectionExpr (CollectionExpr is)):rest) = f is ++ f rest
+  show (LambdaExpr as e) = "(lambda [" ++ (intercalate " " (map show as)) ++ "] " ++ show e ++ ")"
 
 
 instance Show EgisonValue where
