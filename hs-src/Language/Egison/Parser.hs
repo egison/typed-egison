@@ -218,14 +218,11 @@ defineADTExpr = do
     where
       parseConstr = do
         n <- upperName
-        ts <-sepEndBy1 parseType whiteSpace
+        ts <-sepEndBy parseType whiteSpace
         return (n,TypeTuple ts)
 
 printTypeOf :: Parser TopExpr
-printTypeOf = do
-  keywordPrintTypeOf
-  vn <- identVar
-  return (PrintTypeOf vn)
+printTypeOf = keywordPrintTypeOf >> PrintTypeOf <$> expr
 
 
 exprs :: Parser [Expr]

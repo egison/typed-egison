@@ -118,8 +118,8 @@ initialEnvNoIO = do
     Right env' -> return env'
 
 coreLibraries :: [String]
-coreLibraries = [ "lib/core/type-primitive.egi" ]
-  -- [ "lib/math/expression.egi"
+coreLibraries = [ "lib/core/type-primitive.egi"  ]
+-- coreLibraries = [ "lib/math/expression.egi"
   -- , "lib/math/normalize.egi"
   -- , "lib/math/common/arithmetic.egi"
   -- , "lib/math/common/constants.egi"

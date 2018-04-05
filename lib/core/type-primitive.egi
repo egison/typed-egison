@@ -1,8 +1,44 @@
 (define-type-of $b.+ (Fun (Tuple Integer Integer) Integer))
+(define-type-of $b.- (Fun (Tuple Integer Integer) Integer))
+(define-type-of $b.* (Fun (Tuple Integer Integer) Integer))
+(define-type-of $b./ (Fun (Tuple Integer Integer) Integer))
+(define-type-of $eq? (Fun (Tuple (TypeVar a) (TypeVar a)) Bool))
+
+(define $eq
+  (matcher-dfs
+    {[,$val []
+      {[$tgt (if (eq? val tgt)
+                 {[]}
+                 {})]}]
+     [$ [something]
+      {[$tgt {tgt}]}]
+     }))
+  
+(define $bool eq)
+(define $char eq)
+(define $integer eq)
+(define $float eq)
+
+
+(define-type-of $nil (Pattern (TypeVar a)))
 (define-type-of $cons
- (Fun (Tuple (Pattern (TypeVar a)) (Pattern (Collection (TypeVar a)))) 
+ (Fun (Tuple (Pattern (TypeVar a)) (Pattern (Collection (TypeVar a))))
   (Pattern (Collection (TypeVar a)))))
-; (define-type-of $nil (Pattern (Collection a)))
-; (define-type-of $Cons (type-fun (type-tuple (type-var a) (type-collection (type-var a))) (type-collection (type-var a))))
-; (define-type-of $Nil (type-collection (type-var a)))
-; (define $unordered-pair (lambda [$a] (matcher {[<cons $ <cons $ <nil>>> [a a] {[<Cons $x <Cons $y <Nil>>> {[x y] [y x]}]}] [$ [something] {[$tgt {tgt}]}]})))
+(define-type-of $snoc
+ (Fun (Tuple (Pattern (TypeVar a)) (Pattern (Collection (TypeVar a))))
+  (Pattern (Collection (TypeVar a)))))
+(define-type-of $join
+ (Fun (Tuple (Pattern (Collection (TypeVar a))) (Pattern (Collection (TypeVar a))))
+  (Pattern (Collection (TypeVar a)))))
+(define-type-of $nioj
+ (Fun (Tuple (Pattern (Collection (TypeVar a))) (Pattern (Collection (TypeVar a))))
+  (Pattern (Collection (TypeVar a)))))
+(define-ADT Pair <Pair Integer Integer>)
+(define $unpair
+ (lambda [$a]
+  (matcher {[<pair $ $> [a a]
+   {[<Pair $x $y> {[x y] [y x]}]}]
+   [$ [something] {[$tgt {tgt}]}]})))
+(define-type-of $integer (Matcher Integer))
+(define $res (match-all <Pair 2 5> (unpair integer)
+ [<pair ,5 $x> x]))

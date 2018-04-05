@@ -246,7 +246,7 @@ data TopExpr =
   | AbsoluteImplicitConversion Type Type Expr
   | DefineTypeOf Var Type
   | DefineADT String [(String,Type)]
-  | PrintTypeOf Var
+  | PrintTypeOf Expr
  deriving (Show, Eq)
 
 data Expr =

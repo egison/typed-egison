@@ -34,8 +34,8 @@ type Substitution = [Restriction]
 type TypeSchemeEnvironment = [(EE.Var,TypeScheme)]
 type MakeSubstitionM = ExceptT String (State TypeVarIndex)
 
-unusedPrefix = "avoidduplicationprefix"
-finalExprTypeVar = "thisisfinalexprtypevar"
+unusedSuffix = "#"
+finalExprTypeVar = "##"
 
 checkTopExpr :: EE.Env -> EE.TopExpr -> Either String Type
 checkTopExpr env (EE.Test e) = do
@@ -131,6 +131,8 @@ unifySub ((t1, t2) : r)
         (TypePattern t3,TypePattern t4) -> unifySub $ (t3,t4):r
         (TypeMatcher t3,TypeMatcher t4) -> unifySub $ (t3,t4):r
         (TypeMatcherClause t3, TypeMatcherClause t4) -> unifySub $ (t3,t4):r
+        (TypeFun (TypeTuple []) t3,t4) -> unifySub $ (t3,t4):r
+        (t3,TypeFun (TypeTuple []) t4) -> unifySub $ (t3,t4):r
         (TypeVar tv1,t4) -> if tv1 `elem` freeTypeVarIndex t4
             then throwError "Type variable is occured recursively."
             else do
@@ -146,7 +148,7 @@ getNewTypeVar :: MakeSubstitionM Type
 getNewTypeVar = do
   i <- get
   put (nextString i)
-  return $ TypeVar $ unusedPrefix ++ i
+  return $ TypeVar $ i ++ unusedSuffix
 
 innersToExprs :: [EE.InnerExpr] -> [EE.Expr]
 innersToExprs [] = []
@@ -297,6 +299,14 @@ exprToSub' env ty (EE.MatcherBFSExpr es) = do
   let ce p = catchE p (\x -> throwError $ x ++ "\nUnification error in exprToSub' EE.MatcherBFSExpr")
   sub3 <- ce $ unifySub $ ((ty, TypeMatcher ty1) : sub1 ++ sub2)
   return (sub3, applySub sub3 ty)
+exprToSub' env ty (EE.MatcherDFSExpr es) = do
+  ty1 <- getNewTypeVar
+  sts <- mapM (mcsToSub env (TypeMatcherClause ty1)) es
+  let sub1 = foldr (++) [] (map fst sts)
+  let sub2 = map (\x -> (TypeMatcherClause ty1, snd x)) sts
+  let ce p = catchE p (\x -> throwError $ x ++ "\nUnification error in exprToSub' EE.MatcherBFSExpr")
+  sub3 <- ce $ unifySub $ ((ty, TypeMatcher ty1) : sub1 ++ sub2)
+  return (sub3, applySub sub3 ty)
 exprToSub' env ty EE.SomethingExpr = do
   tv1 <- getNewTypeVar
   sub1 <- unifySub $ [(ty, TypeMatcher tv1)]
@@ -383,6 +393,7 @@ pdpToSub env ty (EE.PDInductivePat fname pdps) = do
       (sub2,ty2,env2) <- pdpToSub env ty1 p
       (sub3,env3,tys3) <- f env2 rest
       return ((ty1,ty2) : sub3, env3, ty2:tys3)
+pdpToSub env ty exp = throwError $ "Not implemented ! " ++ show exp ++ "\n"
 
 
 -- The return values is a tuple of substitution and

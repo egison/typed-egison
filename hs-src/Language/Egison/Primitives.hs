@@ -127,9 +127,9 @@ constants = [
 
 primitives :: [(String, PrimitiveFunc)]
 primitives = [ ("b.+", plus)
-             -- , ("b.-", minus)
-             -- , ("b.*", multiply)
-             -- , ("b./", divide)
+             , ("b.-", minus)
+             , ("b.*", multiply)
+             , ("b./", divide)
              -- , ("b.+'", plus)
              -- , ("b.-'", minus)
              -- , ("b.*'", multiply)
