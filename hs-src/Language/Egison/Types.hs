@@ -265,8 +265,9 @@ exprToSub' env ty (EE.LambdaExpr args body) = do
     arg1tys <- mapM (\_ -> getNewTypeVar) args1
     let env1 = (zip args1 (map (\x -> TypeScheme [] x) arg1tys)) ++ filter (\(v,_) -> not (v `elem` args1)) env
     tv <- getNewTypeVar
-    (sub1,ty1) <- exprToSub' env1 tv body
-    sub2 <- unifySub $ (ty, TypeFun (TypeTuple arg1tys) ty1):sub1
+    let ce p = catchE p (\x -> throwError $ x ++ "Unification Error in LambdaExpr.")
+    (sub1,ty1) <- ce $ exprToSub' env1 tv body
+    sub2 <- ce $ unifySub $ (ty, TypeFun (TypeTuple arg1tys) ty1):sub1
     return (sub2, applySub sub2 ty)
       where f (EE.TensorArg s) = EE.Var [s]
             f _ = EE.Var []
@@ -278,6 +279,7 @@ exprToSub' env ty (EE.ApplyExpr fun arg) = do
     let cc = (\x -> throwError "Wrong arguments are passed to a function.")
     sub3 <- catchE (unifySub $ (t2, (TypeFun tv ty)) : (t1, tv) : sub1 ++ sub2) cc
     return (sub3, applySub sub3 ty)
+
 exprToSub' env ty (EE.InductiveDataExpr cnstr args) = do
     tycnstr <- lookupTypeSchemeEnv (EE.Var [cnstr]) env >>= instantiateTypeScheme
     tvargs <- mapM (\x -> getNewTypeVar) args
@@ -308,12 +310,12 @@ exprToSub' env ty (EE.LetRecExpr binds body) = do
     let exs = map snd binds
     tys1 <- mapM (g . snd) binds
     let env1 = zip names (map (\x -> TypeScheme [] x) tys1) ++ env
-    sts <- mapM (\(x,y) -> exprToSub' env1 x y) $ zip tys1 exs
-    sub1 <- unifySub $ concat $ map fst sts
-    tvbody <- getNewTypeVar
-    (sub2, ty2) <- exprToSub' env1 tvbody body
-    sub3 <- unifySub $ sub1 ++ sub2
-    let ret = applySub sub3 tvbody
+    let ce p = catchE p (\x -> throwError $ x ++ "\n Unification Error in EE.LetRecExpr.")
+    sts <- ce $ mapM (\(x,y) -> exprToSub' env1 x y) $ zip tys1 exs
+    sub1 <- ce $ unifySub $ concat $ map fst sts
+    (sub2, ty2) <- exprToSub' env1 ty body
+    sub3 <- ce $ unifySub $ sub1 ++ sub2
+    let ret = applySub sub3 ty
     return (sub3, ret)
       where f (([EE.Var s],_)) = EE.Var s
             g (EE.LambdaExpr _ _) = TypeFun <$> getNewTypeVar <*> getNewTypeVar
