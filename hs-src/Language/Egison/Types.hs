@@ -140,7 +140,7 @@ unifySub ((t1, t2) : r)
         ((TypeFun t3 t4),(TypeFun t5 t6)) -> unifySub ((t3,t5):(t4,t6):r)
         (TypeTuple ts1, TypeTuple ts2) -> if length ts1 == length ts2
           then unifySub $ (zip ts1 ts2) ++ r
-          else throwError "Lengths of tuple are not equal"
+          else throwError "Lengths of tuple are not equal."
         (TypeCollection t3,TypeCollection t4) -> unifySub $ (t3,t4):r
         (TypePattern t3,TypePattern t4) -> unifySub $ (t3,t4):r
         (TypeMatcher t3,TypeMatcher t4) -> unifySub $ (t3,t4):r
@@ -309,6 +309,21 @@ exprToSub' env ty (EE.MatchAllExpr dt mt (pt,ex)) = do
     (sub4, ty4) <- exprToSub' env1 tvex ex
     sub5 <- unifySub $ (ty1, tvdt) : (ty2,TypeMatcher tvdt) : (ty3,TypePattern tvdt) : (ty4, tvex) : (ty,TypeCollection tvex) : sub1 ++ sub2 ++ sub3 ++ sub4
     return (sub5, applySub sub5 ty)
+exprToSub' env ty (EE.MatchExpr dt mt mcs) = do
+    tvdt <- getNewTypeVar
+    tvex <- getNewTypeVar
+    (sub1, ty1) <- exprToSub' env tvdt dt
+    (sub2, ty2) <- exprToSub' env (TypeMatcher tvdt) mt
+    subs3 <- mapM (mctosub env tvdt tvex) mcs
+    sub4 <- unifySub $ (ty, tvex) : (concat $ sub1 : sub2 : subs3)
+    return (sub4, applySub sub4 ty)
+      where
+        mctosub env tvdt tvex (pt, ex) = do
+          (s1, _, e1) <- patternToSub env (TypePattern tvdt) pt
+          (s2, _) <- exprToSub' e1 tvex ex
+          let ce p = catchE p (\x -> throwError $ x ++ "\nUnification error in exprToSub'(mctosub) EE.MatchExpr.")
+          s3 <- unifySub $ s1 ++ s2
+          return s3
 exprToSub' env ty (EE.MatcherBFSExpr es) = do
   ty1 <- getNewTypeVar
   sts <- mapM (mcsToSub env (TypeMatcherClause ty1)) es
