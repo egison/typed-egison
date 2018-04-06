@@ -22,23 +22,23 @@
 ;;
 ;; Utility
 ;;
-;; (define $id 1#%1)
-;; 
-;; (define $fst 2#%1)
-;; 
-;; (define $snd 2#%2)
-;; 
-;; (define $b.compose
-;;   (lambda [$f $g]
-;;     (lambda $x
-;;       (apply g (apply f x)))))
+(define $id 1#%1)
 
-;; (define $compose
-;;   (cambda $fs
-;;     (lambda $x
-;;       (foldl 2#(%2 %1) x fs))))
-;; 
-;; (define $flip (lambda [$fn] (lambda [$x $y] (fn y x))))
+(define $fst 2#%1)
+
+(define $snd 2#%2)
+
+(define $b.compose
+  (lambda [$f $g]
+    (lambda $x
+      (apply g (apply f x)))))
+
+(define $compose
+  (cambda $fs
+    (lambda $x
+      (foldl 2#(%2 %1) x fs))))
+
+(define $flip (lambda [$fn] (lambda [$x $y] (fn y x))))
 ;; 
 ;; (define $ref
 ;;   (lambda [%xa $is]
