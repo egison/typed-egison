@@ -4,7 +4,7 @@ The purpose of this project is to make Egison a static typed language.
 This document is focused on the type system of Egison and written for developer of Egison.  
 You can test codes started with `>` in the Typed Egison interpreter.
 
-## How to install and test
+## How to install and Run Interpreter
 I assume you use linux.
 Please use following commands to build Typed Egison.
 ```
@@ -17,10 +17,16 @@ After build, you can start repl by
 ```
 stack exec egison
 ```
+## Commands in the Interpreter
+You can use these commands in the interpreter
+- `print-type-of` &emsp;&nbsp;show the type of expression
+- `define`&emsp;&emsp;&emsp;&emsp;&emsp;         define fucntions or constants
+- `define-type-of` &nbsp;&nbsp;&nbsp;define type of functions or constants
+- `define-ADT`&emsp;&emsp;&ensp;&nbsp;&nbsp;     define new ADT
 
 ## Built-in Types
 The bult-in types of Egison are
-Char, String, Bool, Integer, Tuple, Collection, Fun, Pattern, Matcher and Any.
+`Char`, `String`, `Bool`, `Integer`, `Tuple`, `Collection`, `Fun`, `Pattern` and `Matcher`.
 
 ### Char, String, Bool, Integer
 You can check the type of a expression using `print-type-of`.  
@@ -121,6 +127,7 @@ You can use `print-type-of` to check whether a name is used or not.
 > (print-type-of unusedname)
 Cannot decide the type of unusedname
 ```
+## Try Mah-jong Example
 
 ## Advanced Topics
 ### Type declaration for built-in functions
