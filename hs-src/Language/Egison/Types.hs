@@ -125,6 +125,13 @@ replace t1 t2 t3 = if t1 == t3
 replaceSubstituition :: Type -> Type -> Substitution -> Substitution
 replaceSubstituition t1 t2 s = map (\(x,y) -> ((replace t1 t2 x), (replace t1 t2 y))) s
 
+isADT :: Type -> Bool
+isADT (TypeVar s) = ord 'A' <= ord (head s) && ord (head s) <= ord 'Z'
+
+isRealTypeVar :: Type -> Bool
+isRealTypeVar t@(TypeVar s) = not $ isADT t
+isRealTypeVar _ = False
+
 unifySub :: Substitution -> MakeSubstitionM Substitution
 unifySub [] = return []
 unifySub ((t1, t2) : r)
@@ -142,9 +149,13 @@ unifySub ((t1, t2) : r)
         (t3,TypeFun (TypeTuple []) t4) -> unifySub $ (t3,t4):r
         (TypeVar tv1,t4) -> if tv1 `elem` freeTypeVarIndex t4
             then throwError "Type variable is occured recursively."
-            else do
-              u <- unifySub (replaceSubstituition (TypeVar tv1) t4 r) 
-              return $ ((applySub u (TypeVar tv1)),(applySub u t4)):u
+            else if isADT (TypeVar tv1)
+                  then if isRealTypeVar t4
+                    then unifySub $ (t4, TypeVar tv1) : r
+                    else throwError $ "Try to unify " ++ show t1 ++ " and " ++ show t2
+                  else do
+                    u <- unifySub (replaceSubstituition (TypeVar tv1) t4 r) 
+                    return $ ((applySub u (TypeVar tv1)),(applySub u t4)):u
         (t4, TypeVar t3) -> unifySub ((TypeVar t3,t4) : r)
         (TypeStar, _) -> unifySub r
         (_, TypeStar) -> unifySub r
@@ -332,7 +343,7 @@ mcsToSub env ty (ppp,nme,pdmcs) = do
   let sub4 = foldr (++) [] (map fst sts)
   let sub5 = map (\x -> (TypeTuple [typdp,TypeCollection holes], snd x)) sts
   let ce p = catchE p (\x -> throwError $ x ++ "\nUnification error in mcsToSub")
-  sub6 <- ce (unifySub $ (ty, TypeMatcherClause ty1) : sub2 ++ sub3 ++ sub4 ++ sub5)
+  sub6 <- ce (unifySub $ (ty, TypeMatcherClause ty1) : (trace (show sub2) sub2) ++ sub3 ++ sub4 ++ sub5)
   return (sub6, applySub sub6 $ TypeMatcherClause ty1)
 
 
@@ -352,7 +363,7 @@ pppToSub env ty (EE.PPValuePat s) = do
   return (sub1, applySub sub1 ty, (EE.Var [s],TypeScheme [] ty1):env, TypeTuple [])
 pppToSub env ty (EE.PPInductivePat fname []) = do
   ftype <- lookupTypeSchemeEnv (EE.Var [fname]) env >>= instantiateTypeScheme
-  sub1 <- unifySub [(ftype, ty)]
+  sub1 <- unifySub (trace (show [(ftype, ty)]) [(ftype, ty)])
   return (sub1, applySub sub1 ftype, env, TypeTuple [])
 pppToSub env ty (EE.PPInductivePat fname ppps) = do
   ftype <- lookupTypeSchemeEnv (EE.Var [fname]) env >>= instantiateTypeScheme
