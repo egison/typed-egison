@@ -40,15 +40,22 @@ finalExprTypeVar = "##"
 checkTopExpr :: EE.Env -> EE.TopExpr -> Either String Type
 checkTopExpr env (EE.Test e) = do
   (s,_) <- exprToSub env e
-  let r = findAns (trace (show s) s)
-  return $ (trace (show r) r)
+  let r = findAns s
+  return r
     where findAns [] = TypeStar
           findAns ((t1,t2):r)
             | t1 == TypeVar finalExprTypeVar = t2
             | t2 == TypeVar finalExprTypeVar = t1
             | otherwise = findAns r
-checkTopExpr env (EE.Define (EE.VarWithIndexType vn _) exp) =
-  checkTopExpr env (EE.Test (EE.LetRecExpr [([EE.Var [vn]],exp)] exp))
+checkTopExpr env (EE.Define (EE.VarWithIndexType vn _) exp) = do
+  ty <- checkTopExpr env (EE.Test (EE.LetRecExpr [([EE.Var [vn]],exp)] exp))
+  case EE.refEnvType (EE.Var [vn]) env of
+    Nothing -> return ty
+    Just ty' -> if check then return ty else Left $ "Declared type " ++ show ty' ++ " and infered type " ++ show ty ++ " don't match."
+      where
+        check = case evalState (runExceptT (unifySub [(ty,ty')])) "###" of
+          Right _ -> True
+          Left _ -> False
 checkTopExpr env _ = Right TypeStar
 
 typeVarIndexCache :: IORef TypeVarIndex
