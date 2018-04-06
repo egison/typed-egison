@@ -137,6 +137,8 @@ unifySub [] = return []
 unifySub ((t1, t2) : r)
     | t1 == t2 = unifySub r
     | otherwise = case (t1, t2) of
+        (TypeStar, _) -> unifySub r
+        (_, TypeStar) -> unifySub r
         ((TypeFun t3 t4),(TypeFun t5 t6)) -> unifySub ((t3,t5):(t4,t6):r)
         (TypeTuple ts1, TypeTuple ts2) -> if length ts1 == length ts2
           then unifySub $ (zip ts1 ts2) ++ r
@@ -157,8 +159,6 @@ unifySub ((t1, t2) : r)
                     u <- unifySub (replaceSubstituition (TypeVar tv1) t4 r) 
                     return $ ((applySub u (TypeVar tv1)),(applySub u t4)):u
         (t4, TypeVar t3) -> unifySub ((TypeVar t3,t4) : r)
-        (TypeStar, _) -> unifySub r
-        (_, TypeStar) -> unifySub r
         otherwise -> throwError $ "Undefined pattern in unifySub " ++ show (t1,t2)
 
 
@@ -175,7 +175,7 @@ innersToExprs ((EE.SubCollectionExpr (EE.CollectionExpr is)):rest) =
     innersToExprs is ++ innersToExprs rest
 
 lookupTypeSchemeEnv :: EE.Var -> TypeSchemeEnvironment -> MakeSubstitionM TypeScheme
-lookupTypeSchemeEnv e [] = throwError $ "Cannot decide the type of " ++ show e
+lookupTypeSchemeEnv e [] = throwError $ "lookupTypeSchemeEnv : Cannot decide the type of " ++ show e
 lookupTypeSchemeEnv e1 ((e2,t):r)
   | e1 == e2 = return t
   | otherwise = lookupTypeSchemeEnv e1 r
@@ -231,6 +231,7 @@ exprToSub' env ty (EE.VarExpr vn) = do
     ty' <- lookupTypeSchemeEnv vn env >>= instantiateTypeScheme
     sub <- unifySub [(ty',ty)]
     return (sub, applySub sub ty')
+
 exprToSub' env ty (EE.IfExpr e1 e2 e3) = do
     let cb = (\x -> throwError "The condition of if expression is not Bool")
     let ct = (\x -> throwError "The two type of bodies of if expression do not correspond.")
@@ -240,12 +241,14 @@ exprToSub' env ty (EE.IfExpr e1 e2 e3) = do
     sub4 <- catchE (unifySub $ (t1, TypeBool) : sub1) cb
     sub5 <- catchE (unifySub $ (t2, t3) : sub4 ++ sub2 ++ sub3) ct
     return (sub5, applySub sub5 t2)
+
 exprToSub' env ty (EE.TupleExpr es) = do
     tvs <- mapM (\x -> getNewTypeVar) es
     sts <- mapM (\(e,tv) -> exprToSub' env tv e) $ zip es tvs
     let ty1 = TypeTuple (map snd sts)
     sub <- unifySub $ (ty, ty1) : (ty,TypeTuple tvs) : (foldr (++) [] (map fst sts))
     return (sub, applySub sub ty1)
+
 exprToSub' env ty (EE.CollectionExpr es) = do
     ty1 <- getNewTypeVar
     let es' = innersToExprs es
@@ -256,6 +259,7 @@ exprToSub' env ty (EE.CollectionExpr es) = do
     let ce p = catchE p (\x -> throwError $ x ++ "\nThe elements of collection do not have the same type.\n" ++ show es ++ "\n" ++ show ((ty, TypeCollection ty2) : (ty, TypeCollection ty1) : sub1 ++ sub2))
     sub3 <- ce $ unifySub $ ((ty, TypeCollection ty2) : (ty, TypeCollection ty1) : sub1 ++ sub2)
     return (sub3, applySub sub3 (TypeCollection ty2))
+
 exprToSub' env ty (EE.LambdaExpr args body) = do
     let args1 = filter (/= EE.Var []) $ map f args
     arg1tys <- mapM (\_ -> getNewTypeVar) args1
@@ -266,6 +270,7 @@ exprToSub' env ty (EE.LambdaExpr args body) = do
     return (sub2, applySub sub2 ty)
       where f (EE.TensorArg s) = EE.Var [s]
             f _ = EE.Var []
+
 exprToSub' env ty (EE.ApplyExpr fun arg) = do
     tv <- getNewTypeVar
     (sub1, t1) <- exprToSub' env tv arg
@@ -282,6 +287,7 @@ exprToSub' env ty (EE.InductiveDataExpr cnstr args) = do
     let ce p = catchE p (\x -> throwError $ x ++ "Wrong arguments are passed to data constructor" ++ cnstr)
     sub2 <- ce $ unifySub $ (tycnstr, TypeFun (TypeTuple tvargs) ty) : sub1
     return (sub2, applySub sub2 ty)
+
 exprToSub' env ty (EE.LetExpr binds body) = do
     let names = filter (/= EE.Var []) $ map f binds
     let exs = map snd binds
@@ -296,20 +302,23 @@ exprToSub' env ty (EE.LetExpr binds body) = do
     return (sub4, applySub sub4 ty)
       where f (([EE.Var s],_)) = EE.Var s
             f _ = EE.Var []
+
 exprToSub' env ty (EE.LetRecExpr binds body) = do
-    let names = filter (/= EE.Var []) $ map f binds
+    let names = map f binds
     let exs = map snd binds
-    tys <- mapM (\x -> getNewTypeVar) binds
-    sts <- mapM (\(x,y) -> exprToSub' env x y) $ zip tys exs
-    let tyshs = map (typeToTypeScheme env . snd) sts
-    let env1 = filter (\(v,_) -> not (v `elem` names)) env ++ zip names tyshs
-    let sub1 = zip tys (map snd sts) ++ foldr (++) [] (map fst sts)
-    sub2 <- unifySub sub1
-    (sub3, ty3) <- exprToSub' env1 ty body
-    sub4 <- unifySub $ sub2 ++ sub3
-    return (sub4, applySub sub4 ty)
+    tys1 <- mapM (g . snd) binds
+    let env1 = zip names (map (\x -> TypeScheme [] x) tys1) ++ env
+    sts <- mapM (\(x,y) -> exprToSub' env1 x y) $ zip tys1 exs
+    sub1 <- unifySub $ concat $ map fst sts
+    tvbody <- getNewTypeVar
+    (sub2, ty2) <- exprToSub' env1 tvbody body
+    sub3 <- unifySub $ sub1 ++ sub2
+    let ret = applySub sub3 tvbody
+    return (sub3, ret)
       where f (([EE.Var s],_)) = EE.Var s
-            f _ = EE.Var []
+            g (EE.LambdaExpr _ _) = TypeFun <$> getNewTypeVar <*> getNewTypeVar
+            g _ = getNewTypeVar
+
 exprToSub' env ty (EE.MatchAllExpr dt mt (pt,ex)) = do
     tvdt <- getNewTypeVar
     tvex <- getNewTypeVar
@@ -413,15 +422,25 @@ pppToSub env ty (EE.PPInductivePat fname ppps) = do
 -- a environment appended free variables in the given pattern
 pdpToSub :: TypeSchemeEnvironment -> Type -> EE.PrimitiveDataPattern -> MakeSubstitionM (Substitution, Type, TypeSchemeEnvironment)
 pdpToSub env ty EE.PDWildCard = return ([], TypeStar, env)
+
 pdpToSub env ty (EE.PDPatVar s) = do
   ty1 <- getNewTypeVar
   let env1 = (EE.Var [s], TypeScheme [] ty1) : env
   return ([(ty1, ty)], ty1, env1)
+
+pdpToSub env ty (EE.PDConsPat pdp1 pdp2) = do
+  (sub1, ty1, env1) <- pdpToSub env ty pdp1
+  (sub2, ty2, env2) <- pdpToSub env ty pdp2
+  let ce p = catchE p (\x -> throwError $ x ++ "\nUnification error in pdpToSub EE.PDConsPat")
+  sub3 <- unifySub $ (TypeCollection ty1,ty2) : sub1 ++ sub2
+  return (sub3, applySub sub3 ty2, env1 ++ env2)
+
 pdpToSub env ty (EE.PDInductivePat fname []) = do
   ftype <- lookupTypeSchemeEnv (EE.Var [fname]) env >>= instantiateTypeScheme
   let ce p = catchE p (\x -> throwError $ x ++ "\nUnification error in pdpToSub EE.PDInductivePat")
   sub1 <- ce $ unifySub $ [(ftype, ty)]
   return (sub1, applySub sub1 ftype, env)
+
 pdpToSub env ty (EE.PDInductivePat fname pdps) = do
   ftype <- lookupTypeSchemeEnv (EE.Var [fname]) env >>= instantiateTypeScheme
   (sub1, env1, tys1) <- f env pdps
@@ -436,7 +455,8 @@ pdpToSub env ty (EE.PDInductivePat fname pdps) = do
       (sub2,ty2,env2) <- pdpToSub env ty1 p
       (sub3,env3,tys3) <- f env2 rest
       return ((ty1,ty2) : sub3, env3, ty2:tys3)
-pdpToSub env ty exp = throwError $ "Not implemented ! " ++ show exp ++ "\n"
+
+pdpToSub env ty _ = return ([], TypeStar, env)
 
 
 -- The return values is a tuple of substitution and
@@ -452,4 +472,6 @@ pdmcToSub env (ty@(TypeTuple [typdp,TypeCollection holes])) (pdp, exp) = do
 
 tupleToMathcerTuple :: Type -> Type
 tupleToMathcerTuple (TypeTuple ts) = TypeTuple (map TypeMatcher ts)
+
+debug x = trace (show x) x
 
