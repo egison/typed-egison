@@ -272,6 +272,15 @@ exprToSub' env ty (EE.ApplyExpr fun arg) = do
     let cc = (\x -> throwError "Wrong arguments are passed to a function.")
     sub3 <- catchE (unifySub $ (t2, (TypeFun tv ty)) : (t1, tv) : sub1 ++ sub2) cc
     return (sub3, applySub sub3 ty)
+exprToSub' env ty (EE.InductiveDataExpr cnstr args) = do
+    tycnstr <- lookupTypeSchemeEnv (EE.Var [cnstr]) env >>= instantiateTypeScheme
+    tvargs <- mapM (\x -> getNewTypeVar) args
+    sts1 <- mapM (\(e,t) -> exprToSub' env t e) (zip args tvargs)
+    let sub1 = concat $ map fst sts1
+    let tys1 = map snd sts1
+    let ce p = catchE p (\x -> throwError $ x ++ "Wrong arguments are passed to data constructor" ++ cnstr)
+    sub2 <- ce $ unifySub $ (tycnstr, TypeFun (TypeTuple tvargs) ty) : sub1
+    return (sub2, applySub sub2 ty)
 exprToSub' env ty (EE.LetExpr binds body) = do
     let names = filter (/= EE.Var []) $ map f binds
     let exs = map snd binds
