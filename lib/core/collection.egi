@@ -20,11 +20,12 @@
 (define-type-of $nioj
  (Fun (Tuple (Pattern (Collection (TypeVar a))) (Pattern (Collection (TypeVar a))))
   (Pattern (Collection (TypeVar a)))))
+(define-type-of $list (Fun (Tuple (Matcher (TypeVar a))) (Matcher (Collection (TypeVar a)))))
+(disable-typecheck-of $list)
 (define $list
   (lambda [$a]
     (matcher
-      {
-       [<nil> []
+      {[<nil> []
         {[{} {[]}]
          [_ {}]}]
        [<cons $ $> [a (list a)]
@@ -33,47 +34,19 @@
        [<snoc $ $> [a (list a)]
         {[{@$xs $x} {[x xs]}]
          [_ {}]}]
-         })))
-;;        [<join $ $> [(list a) (list a)]
-;;         {[$tgt (match-all tgt (list a)
-;;                  [(loop $i [1 $n] <cons $xa_i ...> $rs) [(foldr (lambda [%i %r] {xa_i @r}) {} (between 1 n))
-;;                                                          rs]])]}]
-;;        [<nioj $ $> [(list a) (list a)]
-;;         {[$tgt (match-all tgt (list a)
-;;                  [(loop $i [1 $n] <snoc $xa_i ...> $rs) [(foldr (lambda [%i %r] {@r xa_i}) {} (between 1 n))
-;;                                                          rs]])]}]
-;;        [,$val []
-;;         {[$tgt (if (eq? val tgt) {[]} {})]}]
-;;        [$ [something]
-;;         {[$tgt {tgt}]}]
-;;        })))
-
-
-;; (define $list
-;;   (lambda [$a]
-;;     (matcher
-;;       {[<nil> []
-;;         {[{} {[]}]
-;;          [_ {}]}]
-;;        [<cons $ $> [a (list a)]
-;;         {[{$x @$xs} {[x xs]}]
-;;          [_ {}]}]
-;;        [<snoc $ $> [a (list a)]
-;;         {[{@$xs $x} {[x xs]}]
-;;          [_ {}]}]
-;;        [<join $ $> [(list a) (list a)]
-;;         {[$tgt (match-all tgt (list a)
-;;                  [(loop $i [1 $n] <cons $xa_i ...> $rs) [(foldr (lambda [%i %r] {xa_i @r}) {} (between 1 n))
-;;                                                          rs]])]}]
-;;        [<nioj $ $> [(list a) (list a)]
-;;         {[$tgt (match-all tgt (list a)
-;;                  [(loop $i [1 $n] <snoc $xa_i ...> $rs) [(foldr (lambda [%i %r] {@r xa_i}) {} (between 1 n))
-;;                                                          rs]])]}]
-;;        [,$val []
-;;         {[$tgt (if (eq? val tgt) {[]} {})]}]
-;;        [$ [something]
-;;         {[$tgt {tgt}]}]
-;;        })))
+       [<join $ $> [(list a) (list a)]
+        {[$tgt (match-all tgt (list a)
+                 [(loop $i [1 $n] <cons $xa_i ...> $rs) [(foldr (lambda [%i %r] {xa_i @r}) {} (between 1 n))
+                                                         rs]])]}]
+       [<nioj $ $> [(list a) (list a)]
+        {[$tgt (match-all tgt (list a)
+                 [(loop $i [1 $n] <snoc $xa_i ...> $rs) [(foldr (lambda [%i %r] {@r xa_i}) {} (between 1 n))
+                                                         rs]])]}]
+       [,$val []
+        {[$tgt (if (eq? val tgt) {[]} {})]}]
+       [$ [something]
+        {[$tgt {tgt}]}]
+       })))
 
 ;; (define $sorted-list
 ;;   (lambda [$a]

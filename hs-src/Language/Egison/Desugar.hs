@@ -41,9 +41,6 @@ desugarTopExpr :: TopExpr -> EgisonM TopExpr
 desugarTopExpr (Define name expr) = do
   expr' <- liftEgisonM $ runDesugarM $ desugar expr
   return (Define name expr')
-desugarTopExpr (Redefine name expr) = do
-  expr' <- liftEgisonM $ runDesugarM $ desugar expr
-  return (Redefine name expr')
 desugarTopExpr (Test expr) = do
   expr' <- liftEgisonM $ runDesugarM $ desugar expr
   return (Test expr')

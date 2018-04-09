@@ -128,8 +128,7 @@ doParse p input = either (throwError . fromParsecError) return $ parse p "egison
 topExpr :: Parser TopExpr
 topExpr = try (Test <$> expr)
       <|> try defineExpr
-      <|> try (parens (redefineExpr
-                   <|> testExpr
+      <|> try (parens (testExpr
                    <|> executeExpr
                    <|> loadFileExpr
                    <|> loadExpr
@@ -158,9 +157,6 @@ defineExpr = try (parens (keywordDefine >> Define <$> varNameWithIndexType <*> e
   h (Superscript i) = (VarExpr $ stringToVar i)
   h (Subscript i) = (VarExpr $ stringToVar i)
   h (SupSubscript i) = (VarExpr $ stringToVar i)
-
-redefineExpr :: Parser TopExpr
-redefineExpr = (keywordRedefine <|> keywordSet) >> Redefine <$> varNameWithIndexType <*> expr
 
 testExpr :: Parser TopExpr
 testExpr = keywordTest >> Test <$> expr
@@ -872,7 +868,6 @@ lexer = P.makeTokenParser egisonDef
 reservedKeywords :: [String]
 reservedKeywords = 
   [ "define"
-  , "redefine"
   , "set!"
   , "test"
   , "execute"
@@ -939,7 +934,7 @@ reservedKeywords =
   , "TypeVar"
   , "define-ADT"
   , "print-type-of"
-  , "disable-typcheck-of" ]
+  , "disable-typecheck-of" ]
 
 
 
@@ -966,7 +961,6 @@ reservedOp :: String -> Parser ()
 reservedOp = P.reservedOp lexer
 
 keywordDefine               = reserved "define"
-keywordRedefine             = reserved "redefine"
 keywordSet                  = reserved "set!"
 keywordTest                 = reserved "test"
 keywordExecute              = reserved "execute"

@@ -238,7 +238,6 @@ instance Show Type where
 
 data TopExpr =
     Define VarWithIndexType Expr
-  | Redefine VarWithIndexType Expr
   | Test Expr
   | Execute Expr
     -- temporary : we will replace load to import and export

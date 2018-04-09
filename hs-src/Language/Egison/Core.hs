@@ -145,9 +145,6 @@ evalTopExpr env (Define name expr) =
         Left err -> throwError $ Default err
         where typecheck = checkTopExpr env (Define name expr)
 
-evalTopExpr env (Redefine name expr) = 
-  recursiveRebind env ((stringToVar $ show name), expr) >>= return . (Nothing,)
-
 evalTopExpr env (Test expr) = do
   val <- evalExprDeep env expr
   return (Just (show val), env)

@@ -14,8 +14,14 @@ module Language.Egison.ImplConv(
 
 import qualified Language.Egison.Expressions as EE
 import Language.Egison.Expressions (Type(..), Expr(..), TopExpr(..), Env, refEnvImplConv, refEnvAbsImplConv, deleteEnvType)
-import Language.Egison.Types (innersToExprs)
 import Control.Monad.Reader (Reader, ask, local, runReader)
+
+innersToExprs :: [EE.InnerExpr] -> [EE.Expr]
+innersToExprs [] = []
+innersToExprs (EE.ElementExpr e:rest) = e : innersToExprs rest
+innersToExprs ((EE.SubCollectionExpr (EE.CollectionExpr is)):rest) =
+    innersToExprs is ++ innersToExprs rest
+
 
 implConvTopExpr :: Env -> TopExpr -> [Expr]
 implConvTopExpr env exp = case exp of
