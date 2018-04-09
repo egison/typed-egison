@@ -98,6 +98,8 @@ module Language.Egison.Expressions
     , deleteEnvType
     , extendEnvAbsImplConv
     , refEnvAbsImplConv
+    , refEnvDisableTypecheck
+    , extendEnvDisableTypecheck
     -- * Pattern matching
     , Match
     , PMMode (..)
@@ -247,6 +249,7 @@ data TopExpr =
   | DefineTypeOf Var Type
   | DefineADT String [(String,Type)]
   | PrintTypeOf Expr
+  | DisableTypecheckOf Var
  deriving (Show, Eq)
 
 data Expr =
@@ -1562,7 +1565,7 @@ class (EgisonWHNF a) => EgisonObject a where
 -- Environment
 --
 
-data Env = Env { envExpr::MS.Map Var ObjectRef, envType::[(Var, Type)], envImplConv::[(Type, Type, Expr)], envAbsImplConv::[(Type, Type, Expr)] }
+data Env = Env { envExpr::MS.Map Var ObjectRef, envType::[(Var, Type)], envImplConv::[(Type, Type, Expr)], envAbsImplConv::[(Type, Type, Expr)] ,envDisableTypecheck::[Var]}
  deriving (Show)
 
 newtype Var = Var [String]
@@ -1626,7 +1629,7 @@ instance Show (Index EgisonValue) where
                          _ -> "|" ++ show i
 
 nullEnv :: Env
-nullEnv = Env { envExpr = MS.empty, envType = [], envImplConv = [], envAbsImplConv = [] }
+nullEnv = Env { envExpr = MS.empty, envType = [], envImplConv = [], envAbsImplConv = [] ,envDisableTypecheck = []}
 
 extendEnv :: Env -> [Binding] -> Env
 extendEnv env bind = env { envExpr= foldr (\(k,v) -> MS.insert k v) (envExpr env) bind }
@@ -1654,6 +1657,13 @@ extendEnvType t e = e { envType = t ++ envType e }
 
 deleteEnvType :: [Var] -> Env -> Env
 deleteEnvType v e = e { envType = filter (\x -> not (fst x `elem` v)) $ envType e }
+
+
+refEnvDisableTypecheck :: Var -> Env -> Bool
+refEnvDisableTypecheck v e = v `elem` (envDisableTypecheck e)
+
+extendEnvDisableTypecheck :: Var -> Env -> Env
+extendEnvDisableTypecheck v e = e { envDisableTypecheck = v : envDisableTypecheck e }
 
 --
 -- Pattern Match

@@ -137,7 +137,8 @@ topExpr = try (Test <$> expr)
                    <|> absoluteImplicitConversionExpr
                    <|> defineTypeOfExpr
                    <|> defineADTExpr
-                   <|> printTypeOf))
+                   <|> printTypeOf
+                   <|> disableTypecheckOf))
       <?> "top-level expression"
 
 
@@ -178,6 +179,9 @@ implicitConversionExpr = keywordImplConv >> ImplicitConversion <$> parseType <*>
 
 absoluteImplicitConversionExpr :: Parser TopExpr
 absoluteImplicitConversionExpr = keywordAbsImplConv >> AbsoluteImplicitConversion <$> parseType <*> parseType <*> expr
+
+disableTypecheckOf :: Parser TopExpr
+disableTypecheckOf = keywordDisableTypecheckOf >> DisableTypecheckOf <$> varName'
 
 defineTypeOfExpr :: Parser TopExpr
 defineTypeOfExpr = keywordDefineTypeOf >> DefineTypeOf <$> varName' <*> parseType
@@ -934,7 +938,8 @@ reservedKeywords =
   , "Pattern"
   , "TypeVar"
   , "define-ADT"
-  , "print-type-of" ]
+  , "print-type-of"
+  , "disable-typcheck-of" ]
 
 
 
@@ -1036,6 +1041,7 @@ keywordTypeVar              = reserved "TypeVar"
 keywordDefineTypeOf         = reserved "define-type-of"
 keywordDefineADT            = reserved "define-ADT"
 keywordPrintTypeOf          = reserved "print-type-of"
+keywordDisableTypecheckOf   = reserved "disable-typecheck-of"
 
 
 sign :: Num a => Parser (a -> a)

@@ -134,25 +134,34 @@ evalTopExprsWithoutLoad env (t:rest) = do
 -- The return value is (output string, environment)
 evalTopExpr :: Env -> TopExpr -> EgisonM (Maybe String, Env)
 evalTopExpr env (Define name expr) =
-  case typecheck of
-    Right ty ->
-      let env1 = extendEnvType [((stringToVar $ show name),ty)] env in
-      recursiveBind env1 [((stringToVar $ show name), expr)] >>= return . ((,) Nothing)
-    Left err -> throwError $ Default err
-    where typecheck = checkTopExpr env (Define name expr)
+  if refEnvDisableTypecheck (stringToVar $ show name) env
+    then
+      recursiveBind env [((stringToVar $ show name), expr)] >>= return . (Nothing,)
+    else
+      case typecheck of
+        Right ty ->
+          let env1 = extendEnvType [((stringToVar $ show name),ty)] env in
+          recursiveBind env1 [((stringToVar $ show name), expr)] >>= return . (Nothing,)
+        Left err -> throwError $ Default err
+        where typecheck = checkTopExpr env (Define name expr)
+
 evalTopExpr env (Redefine name expr) = 
-  recursiveRebind env ((stringToVar $ show name), expr) >>= return . ((,) Nothing)
+  recursiveRebind env ((stringToVar $ show name), expr) >>= return . (Nothing,)
+
 evalTopExpr env (Test expr) = do
   val <- evalExprDeep env expr
   return (Just (show val), env)
+
 evalTopExpr env (Execute expr) = do
   io <- evalExpr env expr
   case io of
     Value (IOFunc m) -> m >> return (Nothing, env)
     _ -> throwError $ TypeMismatch "io" io
+
 evalTopExpr env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv [(t1,t2,e)] env)
 evalTopExpr env (AbsoluteImplicitConversion t1 t2 e) = return (Nothing, extendEnvAbsImplConv [(t1,t2,e)] env)
 evalTopExpr env (DefineTypeOf v t) = return (Nothing, extendEnvType [(v,t)] env)
+
 evalTopExpr env (DefineADT adtname cts) = do
   let cs = map constr cts
   let ps = map pconstr cts
@@ -161,11 +170,14 @@ evalTopExpr env (DefineADT adtname cts) = do
           pconstr (s,t) = (Var [lower s], TypeFun (ttop t) (TypePattern (TypeVar adtname)))
           lower (c:r) = (chr (ord c - (ord 'A' - ord 'a'))) : r
           ttop (TypeTuple ts) = TypeTuple $ map TypePattern ts
+
 evalTopExpr env (PrintTypeOf exp) = 
   case typecheck of
     Right ty -> return (Just $ show exp ++ " :: " ++ show ty, env)
     Left err -> return (Just err, env)
     where typecheck = checkTopExpr env (Test exp)
+
+evalTopExpr env (DisableTypecheckOf v) = return (Nothing, extendEnvDisableTypecheck v env)
 
 evalExpr :: Env -> Expr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c
