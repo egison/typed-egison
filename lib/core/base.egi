@@ -22,56 +22,69 @@
 ;;
 ;; Utility
 ;;
+(disable-typecheck-of $id)
 (define $id 1#%1)
 
+(disable-typecheck-of $fst)
 (define $fst 2#%1)
 
+(disable-typecheck-of $snd)
 (define $snd 2#%2)
 
+(disable-typecheck-of $b.compose)
 (define $b.compose
   (lambda [$f $g]
     (lambda $x
       (apply g (apply f x)))))
 
+(disable-typecheck-of $compose)
 (define $compose
   (cambda $fs
     (lambda $x
       (foldl 2#(%2 %1) x fs))))
 
+(disable-typecheck-of $flip)
 (define $flip (lambda [$fn] (lambda [$x $y] (fn y x))))
-;; 
-;; (define $ref
-;;   (lambda [%xa $is]
-;;     (match is (list integer)
-;;       {[<nil> xa]
-;;        [<cons $i $rs> (ref (array-ref xa i) rs)]})))
-;; 
-;; (define $eq?/m
-;;   (lambda [$a $x $y]
-;;     (match x a
-;;       {[,y #t]
-;;        [_ #f]})))
-;; 
-;; ;;
-;; ;; Boolean
-;; ;;
-;; (define $and (cambda $bs (foldl b.and #t bs)))
-;; (define $or (cambda $bs (foldl b.or #f bs)))
-;; 
-;; (define $b.and
-;;   (lambda [$b1 $b2]
-;;     (if b1
-;;         b2
-;;         #f)))
-;; 
-;; (define $b.or
-;;   (lambda [$b1 $b2]
-;;     (if b1
-;;         #t
-;;         b2)))
-;; 
-;; (define $not
-;;   (lambda [$b]
-;;     (match b bool
-;;       {[,#t #f]
-;;        [,#f #t]})))
+
+(disable-typecheck-of $ref)
+(define $ref
+  (lambda [%xa $is]
+    (match is (list integer)
+      {[<nil> xa]
+       [<cons $i $rs> (ref (array-ref xa i) rs)]})))
+
+(disable-typecheck-of $eq/m)
+(define $eq?/m
+  (lambda [$a $x $y]
+    (match x a
+      {[,y #t]
+       [_ #f]})))
+
+;;
+;; Boolean
+;;
+(disable-typecheck-of $and)
+(define $and (cambda $bs (foldl b.and #t bs)))
+(disable-typecheck-of $or)
+(define $or (cambda $bs (foldl b.or #f bs)))
+
+(disable-typecheck-of $b.and)
+(define $b.and
+  (lambda [$b1 $b2]
+    (if b1
+        b2
+        #f)))
+
+(disable-typecheck-of $b.or)
+(define $b.or
+  (lambda [$b1 $b2]
+    (if b1
+        #t
+        b2)))
+
+(disable-typecheck-of $not)
+(define $not
+  (lambda [$b]
+    (match b bool
+      {[,#t #f]
+       [,#f #t]})))

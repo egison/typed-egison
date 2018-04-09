@@ -10,11 +10,11 @@ This module provide desugar functions.
 
 module Language.Egison.Desugar
     (
-      DesugarM
-    , runDesugarM
-    , desugarTopExpr
-    , desugarExpr
-    , desugar
+    --   DesugarM
+    -- , runDesugarM
+    -- , desugarTopExpr
+    -- , desugarExpr
+    -- , desugar
     ) where
 
 import Control.Applicative (Applicative)

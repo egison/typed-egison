@@ -34,17 +34,17 @@ type TypeSchemeEnvironment = [(EE.Var,TypeScheme)]
 type MakeSubstitionM = ExceptT String (State TypeVarIndex)
 
 unusedSuffix = "#"
-finalExprTypeVar = "##"
+finalExprTypeVar = "finalExprTypeVar"
 
 checkTopExpr :: EE.Env -> EE.TopExpr -> Either String Type
 checkTopExpr env (EE.Test e) = do
   (s,_) <- exprToSub env e
-  let r = findAns s
-  return r
-    where findAns [] = TypeStar
+  findAns s
+    where findAns :: Substitution -> Either String Type
+          findAns [] = Left "Cannot find answer in the substitution."
           findAns ((t1,t2):r)
-            | t1 == TypeVar finalExprTypeVar = t2
-            | t2 == TypeVar finalExprTypeVar = t1
+            | t1 == TypeVar finalExprTypeVar = return t2
+            | t2 == TypeVar finalExprTypeVar = return t1
             | otherwise = findAns r
 checkTopExpr env (EE.Define (EE.VarWithIndexType vn _) exp) = do
   ty <- checkTopExpr env (EE.Test (EE.LetRecExpr [([EE.Var [vn]],exp)] exp))
@@ -94,6 +94,15 @@ applySub s (TypePattern t) = TypePattern (applySub s t)
 applySub s (TypeMatcher t) = TypeMatcher (applySub s t)
 applySub s (TypeMatcherClause t) = TypeMatcherClause (applySub s t)
 applySub _ t = t
+
+
+applySubEnv :: Substitution -> TypeSchemeEnvironment -> TypeSchemeEnvironment
+applySubEnv s [] = []
+applySubEnv s ((e,TypeScheme tvs ty) : r) = (e,TypeScheme (freeTypeVarIndex ty') ty') : r'
+  where
+    ty' = applySub s ty
+    r' = applySubEnv s r
+
 
 freeTypeVarIndex :: Type -> [TypeVarIndex]
 freeTypeVarIndex = nub . freeTypeVarIndex'
@@ -293,6 +302,7 @@ exprToSub' env ty (EE.LetExpr binds body) = do
     let exs = map snd binds
     tys <- mapM (\x -> getNewTypeVar) binds
     sts <- mapM (\(x,y) -> exprToSub' env x y) $ zip tys exs
+
     let tyshs = map (typeToTypeScheme env . snd) sts
     let env1 = filter (\(v,_) -> not (v `elem` names)) env ++ zip names tyshs
     let sub1 = zip tys (map snd sts) ++ foldr (++) [] (map fst sts)
@@ -306,15 +316,17 @@ exprToSub' env ty (EE.LetExpr binds body) = do
 exprToSub' env ty (EE.LetRecExpr binds body) = do
     let names = map f binds
     let exs = map snd binds
-    tys1 <- mapM (g . snd) binds
-    let env1 = zip names (map (\x -> TypeScheme [] x) tys1) ++ env
-    sts <- mapM (\(x,y) -> exprToSub' env1 x y) $ zip tys1 exs
+    tys <- mapM (g . snd) binds
+    let env1 = zip names (map (\x -> TypeScheme [] x) tys) ++ env
+    sts <- mapM (\(x,y) -> exprToSub' env1 x y) $ zip tys exs
+    
     sub1 <- unifySub $ concat $ map fst sts
-    tvbody <- getNewTypeVar
-    (sub2, ty2) <- exprToSub' env1 tvbody body
+    let env2 = applySubEnv (sub1) env1
+    (sub2, ty2) <- exprToSub' (env2) (ty) (body)
+    
     sub3 <- unifySub $ sub1 ++ sub2
-    let ret = applySub sub3 tvbody
-    return (sub3, ret)
+    let ret = applySub sub3 ty
+    return (sub3, (ret))
       where f (([EE.Var s],_)) = EE.Var s
             g (EE.LambdaExpr _ _) = TypeFun <$> getNewTypeVar <*> getNewTypeVar
             g _ = getNewTypeVar
@@ -328,6 +340,7 @@ exprToSub' env ty (EE.MatchAllExpr dt mt (pt,ex)) = do
     (sub4, ty4) <- exprToSub' env1 tvex ex
     sub5 <- unifySub $ (ty1, tvdt) : (ty2,TypeMatcher tvdt) : (ty3,TypePattern tvdt) : (ty4, tvex) : (ty,TypeCollection tvex) : sub1 ++ sub2 ++ sub3 ++ sub4
     return (sub5, applySub sub5 ty)
+
 exprToSub' env ty (EE.MatchExpr dt mt mcs) = do
     tvdt <- getNewTypeVar
     tvex <- getNewTypeVar
@@ -343,6 +356,7 @@ exprToSub' env ty (EE.MatchExpr dt mt mcs) = do
           let ce p = catchE p (\x -> throwError $ x ++ "\nUnification error in exprToSub'(mctosub) EE.MatchExpr.")
           s3 <- unifySub $ s1 ++ s2
           return s3
+
 exprToSub' env ty (EE.MatcherBFSExpr es) = do
   ty1 <- getNewTypeVar
   sts <- mapM (mcsToSub env (TypeMatcherClause ty1)) es
@@ -350,7 +364,8 @@ exprToSub' env ty (EE.MatcherBFSExpr es) = do
   let sub2 = map (\x -> (TypeMatcherClause ty1, snd x)) sts
   let ce p = catchE p (\x -> throwError $ x ++ "\nUnification error in exprToSub' EE.MatcherBFSExpr")
   sub3 <- ce $ unifySub $ ((ty, TypeMatcher ty1) : sub1 ++ sub2)
-  return (sub3, applySub sub3 ty)
+  return (sub3, applySub (trace (show sub3) sub3) ty)
+
 exprToSub' env ty (EE.MatcherDFSExpr es) = do
   ty1 <- getNewTypeVar
   sts <- mapM (mcsToSub env (TypeMatcherClause ty1)) es

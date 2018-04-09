@@ -7,14 +7,18 @@
 ;;
 ;; Matcher definitions
 ;;
+
+
 (define-ADT Suit <Spade> <Heart> <Club> <Diamond>)
 (define $suit
- (matcher {[,$val [] {[$tgt (if (eq? val tgt) {[]} {})]}]
+ (matcher {
+           ; [,$val [] {[$tgt (if (eq? val tgt) {[]} {})]}]
            [<spade>   [] {[<Spade>   {[]}] [_ {}]}]
            [<heart>   [] {[<Heart>   {[]}] [_ {}]}]
            [<club>    [] {[<Club>    {[]}] [_ {}]}]
            [<diamond> [] {[<Diamond> {[]}] [_ {}]}]
-           [$ [something] {[$tgt {tgt}]}]}))
+           ; [$ [something] {[$tgt {tgt}]}]
+           }))
 
 (define-ADT Card <Card (TypeVar Suit) Integer>)
 (define $card-matcher
@@ -25,22 +29,18 @@
 (define-ADT Hands <Straight-Flush> <Four-of-Kind> <Full-House> <Flush> <Straight> 
  <Three-of-Kind> <Two-Pair> <One-Pair> <Nothing>)
 ;; A function that determines poker-hands
-(define-type-of $multiset (Fun (Tuple (Matcher (TypeVar a))) (Matcher (Collection (TypeVar a)))))
-(define-type-of $nil (Pattern (TypeVar a)))
-(define-type-of $cons
- (Fun (Tuple (Pattern (TypeVar a)) (Pattern (Collection (TypeVar a))))
-  (Pattern (Collection (TypeVar a)))))
 
 (define $poker-hands
   (lambda [$cs]
     (match cs (multiset card-matcher)
-      {[<cons <card $s $n>
-         <cons <card ,s ,(b.- n 1)>
-          <cons <card ,s ,(b.- n 2)>
-           <cons <card ,s ,(b.- n 3)>
-            <cons <card ,s ,(b.- n 4)>
-             <nil>>>>>>
-        <Straight-Flush>]
+      {
+;      [<cons <card $s $n>
+;         <cons <card ,s ,(b.- n 1)>
+;          <cons <card ,s ,(b.- n 2)>
+;           <cons <card ,s ,(b.- n 3)>
+;            <cons <card ,s ,(b.- n 4)>
+;             <nil>>>>>>
+;        <Straight-Flush>]
        [<cons <card _ $n>
          <cons <card _ ,n>
           <cons <card _ ,n>
@@ -62,13 +62,13 @@
                <cons <card ,s _>
                  <nil>>>>>>
         <Flush>]
-       [<cons <card _ $n>
-         <cons <card _ ,(b.- n 1)>
-          <cons <card _ ,(b.- n 2)>
-           <cons <card _ ,(b.- n 3)>
-            <cons <card _ ,(b.- n 4)>
-             <nil>>>>>>
-        <Straight>]
+;       [<cons <card _ $n>
+;         <cons <card _ ,(b.- n 1)>
+;          <cons <card _ ,(b.- n 2)>
+;           <cons <card _ ,(b.- n 3)>
+;            <cons <card _ ,(b.- n 4)>
+;             <nil>>>>>>
+;        <Straight>]
        [<cons <card _ $n>
          <cons <card _ ,n>
           <cons <card _ ,n>
@@ -98,30 +98,28 @@
              <nil>>>>>>
         <Nothing>]})))
 
-;; ;;
-;; ;; Demonstration code
-;; ;;
-;; (test (poker-hands {<Card <Club> 12>
-;;                     <Card <Club> 10>
-;;                     <Card <Club> 13>
-;;                     <Card <Club> 1>
-;;                     <Card <Club> 11>}))
-;; 
-;; (test (poker-hands {<Card <Diamond> 1>
-;;                     <Card <Club> 2>
-;;                     <Card <Club> 1>
-;;                     <Card <Heart> 1>
-;;                     <Card <Diamond> 2>}))
-;; 
-;; (test (poker-hands {<Card <Diamond> 4>
-;;                     <Card <Club> 2>
-;;                     <Card <Club> 5>
-;;                     <Card <Heart> 1>
-;;                     <Card <Diamond> 3>}))
-;; 
-;; (test (poker-hands {<Card <Diamond> 4>
-;;                     <Card <Club> 10>
-;;                     <Card <Club> 5>
-;;                     <Card <Heart> 1>
-;;                     <Card <Diamond> 3>}))
-;; 
+
+(test (poker-hands {<Card <Club> 12>
+                    <Card <Club> 10>
+                    <Card <Club> 13>
+                    <Card <Club> 1>
+                    <Card <Club> 11>}))
+
+(test (poker-hands {<Card <Diamond> 1>
+                    <Card <Club> 2>
+                    <Card <Club> 1>
+                    <Card <Heart> 1>
+                    <Card <Diamond> 2>}))
+
+(test (poker-hands {<Card <Diamond> 4>
+                    <Card <Club> 2>
+                    <Card <Club> 5>
+                    <Card <Heart> 1>
+                    <Card <Diamond> 3>}))
+
+(test (poker-hands {<Card <Diamond> 4>
+                    <Card <Club> 10>
+                    <Card <Club> 5>
+                    <Card <Heart> 1>
+                    <Card <Diamond> 3>}))
+
