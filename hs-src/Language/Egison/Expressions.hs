@@ -1711,6 +1711,7 @@ data EgisonError =
   | Desugar String
   | EgisonBug String
   | Default String
+  | TypeCheckError String
   deriving Typeable
     
 instance Show EgisonError where
@@ -1731,6 +1732,7 @@ instance Show EgisonError where
   show (Assertion message) = "Assertion failed: " ++ message
   show (Desugar message) = "Error: " ++ message
   show (EgisonBug message) = "Egison Error: " ++ message
+  show (TypeCheckError message) = "Type Error: " ++ message
   show (Default message) = "Error: " ++ message
 
 instance Exception EgisonError

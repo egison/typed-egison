@@ -142,13 +142,17 @@ evalTopExpr env (Define name expr) =
         Right ty ->
           let env1 = extendEnvType [((stringToVar $ show name),ty)] env in
           recursiveBind env1 [((stringToVar $ show name), expr)] >>= return . (Nothing,)
-        Left err -> throwError $ Default err
+        Left err -> throwError $ TypeCheckError err
         where typecheck = checkTopExpr env (Test (LetRecExpr [([var],expr)] expr))
               var = stringToVar $ show name
 
-evalTopExpr env (Test expr) = do
-  val <- evalExprDeep env expr
-  return (Just (show val), env)
+evalTopExpr env (Test expr) = 
+  case typecheck of
+    Right ty -> do
+      val <- evalExprDeep env expr
+      return (Just (show val), env)
+    Left err -> throwError $ TypeCheckError err
+    where typecheck = checkTopExpr env (Test expr)
 
 evalTopExpr env (Execute expr) = do
   io <- evalExpr env expr
