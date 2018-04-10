@@ -247,10 +247,10 @@ repl noIOFlag mathExprLang env prompt = do
     
   loop :: Env -> IO ()
   loop env = (do 
-    -- show Env for debug
-    print env
-    putStrLn "---------------------\n"
-    -- show Env for debug
+    -- show Env for debug start
+    -- print env
+    -- putStrLn "---------------------\n"
+    -- show Env for debug end
     home <- getHomeDirectory
     input <- liftIO $ runInputT (settings home) $ getEgisonExpr prompt
     case (noIOFlag, input) of
@@ -262,20 +262,22 @@ repl noIOFlag mathExprLang env prompt = do
         putStrLn "error: No IO support"
         loop env
       (_, Just (topExpr, _)) -> do
-        -- show AST for debug
-        ast <-  fromEgisonM $ readTopExpr topExpr
-        print "AST of input is following."
-        print ast
-        putStrLn "---------------------"
-        let tc = ast >>= (return . TC.checkTopExpr env)
-        case tc of
-          (Right (Right t)) -> putStrLn $ "type of exp = " ++ show t
-          _ -> print tc
-        putStrLn "---------------------"
-        let ics = liftM (implConvTopExpr env) ast
-        print ics
-        putStrLn "---------------------"
-        -- show AST for debug
+
+        -- show AST for debug start
+        -- ast <-  fromEgisonM $ readTopExpr topExpr
+        -- print "AST of input is following."
+        -- print ast
+        -- putStrLn "---------------------"
+        -- let tc = ast >>= (return . TC.checkTopExpr env)
+        -- case tc of
+        --   (Right (Right t)) -> putStrLn $ "type of exp = " ++ show t
+        --   _ -> print tc
+        -- putStrLn "---------------------"
+        -- let ics = liftM (implConvTopExpr env) ast
+        -- print ics
+        -- putStrLn "---------------------"
+        -- show AST for debug end
+        
         result <- liftIO $ runEgisonTopExpr' env topExpr
         case result of
           Left err -> do
