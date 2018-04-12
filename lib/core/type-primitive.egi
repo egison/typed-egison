@@ -37,11 +37,17 @@
   (Pattern (Collection (TypeVar a)))))
 
 
-
 (define-ADT PairII <Pair Integer Integer>)
-(define $unordered-pair
+(define $unorderd-pair
  (lambda [$a]
   (matcher {[<pair $ $> [a a]
    {[<Pair $x $y> {[x y] [y x]}]}]
    [$ [something] {[$tgt {tgt}]}]})))
 (define-type-of $integer (Matcher Integer))
+
+(matcher {[<pair $ $> [a a]
+   {[<Pair $x $y> {[x y] [y x]}]}]
+   [$ [something] {[$tgt {tgt}]}]})
+
+
+

@@ -167,7 +167,7 @@ unifySub ((t1, t2) : r)
                     u <- unifySub (replaceSubstituition (TypeVar tv1) t4 r) 
                     return $ ((applySub u (TypeVar tv1)),(applySub u t4)):u
         (t4, TypeVar t3) -> unifySub ((TypeVar t3,t4) : r)
-        otherwise -> throwError $ "Undefined pattern in unifySub " ++ show (t1,t2)
+        otherwise -> throwError $ "Cannot unify " ++ show t1 ++ " and " ++ show t2
 
 
 getNewTypeVar :: MakeSubstitionM Type
@@ -284,7 +284,7 @@ exprToSub' env ty (EE.ApplyExpr fun arg) = do
     tv <- getNewTypeVar
     (sub1, t1) <- exprToSub' env tv arg
     (sub2, t2) <- exprToSub' env (TypeFun tv ty) fun
-    let cc = (\x -> throwError "Wrong arguments are passed to a function.")
+    let cc = (\x -> throwError $ "Wrong arguments are passed to a function " ++ show fun ++ ".")
     sub3 <- catchE (unifySub $ (t2, (TypeFun tv ty)) : (t1, tv) : sub1 ++ sub2) cc
     return (sub3, applySub sub3 ty)
 exprToSub' env ty (EE.InductiveDataExpr cnstr args) = do
