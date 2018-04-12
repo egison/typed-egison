@@ -43,11 +43,3 @@
   (matcher {[<pair $ $> [a a]
    {[<Pair $x $y> {[x y] [y x]}]}]
    [$ [something] {[$tgt {tgt}]}]})))
-(define-type-of $integer (Matcher Integer))
-
-(matcher {[<pair $ $> [a a]
-   {[<Pair $x $y> {[x y] [y x]}]}]
-   [$ [something] {[$tgt {tgt}]}]})
-
-
-

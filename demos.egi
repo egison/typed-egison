@@ -1,0 +1,17 @@
+;; type error
+(b.+ "hello" 10)
+
+(b.+ 1 10)
+(print-type-of (b.+ 1 10))
+(print-type-of Pair)
+(print-type-of pair)
+(define $unorderd-pair
+ (lambda [$a]
+  (matcher {[<pair $ $> [a a]
+   {[<Pair $x $y> {[x y] [y x]}]}]
+   [$ [something] {[$tgt {tgt}]}]})))
+
+;; type error
+(match-all <Pair 1 2> unorderd-pair [<pair ,2 $x> x])
+
+(match-all <Pair 1 2> (unorderd-pair integer) [<pair ,2 $x> x])

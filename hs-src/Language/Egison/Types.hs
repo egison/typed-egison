@@ -364,7 +364,7 @@ exprToSub' env ty (EE.MatcherBFSExpr es) = do
   let sub2 = map (\x -> (TypeMatcherClause ty1, snd x)) sts
   let ce p = catchE p (\x -> throwError $ x ++ "\nUnification error in exprToSub' EE.MatcherBFSExpr")
   sub3 <- ce $ unifySub $ ((ty, TypeMatcher ty1) : sub1 ++ sub2)
-  return (sub3, applySub (trace (show sub3) sub3) ty)
+  return (sub3, applySub sub3 ty)
 
 exprToSub' env ty (EE.MatcherDFSExpr es) = do
   ty1 <- getNewTypeVar
