@@ -1,11 +1,11 @@
 # Typed Egison
 This is a derivation of Egison.  
-The purpose of this project is to make Egison a static typed language.  
-This document is focused on the type system of Egison and written for developer of Egison.  
+The purpose of this project is to make Egison a statically typed language.  
+This document is focused on the type system of Egison and written for developers of Egison.  
 You can test codes started with `>` in the Typed Egison interpreter.
 
 ## How to install and Run Interpreter
-I assume you use linux.
+I assume you use Linux.
 Please use following commands to build Typed Egison.
 ```
 git clone git@github.com:egison/typed-egison.git
@@ -25,7 +25,7 @@ You can use these commands in the interpreter
 - `define-ADT`&emsp;&emsp;&ensp;&nbsp;&nbsp;     define new ADT
 
 ## Built-in Types
-The bult-in types of Egison are
+The built-in types of Egison are
 `Char`, `String`, `Bool`, `Integer`, `Tuple`, `Collection`, `Fun`, `Pattern` and `Matcher`.
 
 ### Char, String, Bool, Integer
@@ -58,7 +58,7 @@ Collection is used to represent a data which contains many same type datum.
 ```
 
 ## Fun
-Fun is a abbreviation of function of curse.
+Fun is an abbreviation of a function of course.
 Functions in Egison are take a tuple and return a value.
 ```
 > (print-type-of (lambda [$x] (b.+ x 10)))
@@ -67,7 +67,7 @@ Functions in Egison are take a tuple and return a value.
 This means `(lambda [$x] (b.+ x 10))` takes a tuple of integer and return integer.
 
 ### Pattern, Matcher
-These two types are deeply related with `match-all` syntax.
+These two types are deeply related to `match-all` syntax.
 In short, `match-all` looks like following.
 ```
 (match-all "Data" "How to match" ["Pattern" "Result"])
@@ -83,10 +83,10 @@ You don't have to understand details of `<Pair 2 5>`, `(unorderd-pair integer)` 
 What I want to teach in this section is types of these parts. These types are
 ```
 <Pair 2 5> :: PairII
-(unorderd-pair integer) :: Matcher PairII
+(unordered-pair integer) :: Matcher PairII
 <pair ,5 $x> :: Pattern PairII
 ```
-`PairII` is user-defined ADT. I will explain about ADT in later section.
+`PairII` is user-defined ADT. I will explain about ADT in a later section.
 
 In this example, `match-all` takes 3 arguments.  
 Their types are `PairII`, `(Matcher PairII)`, `(Tuple (Pattern PairII) Integer)` respectively and return `(Collection Integer)`.   
@@ -98,8 +98,6 @@ In rough words, `match-all` has this type
 (Fun (Tuple a (Matcher a) (Tuple (Pattern a) b)) (Collection b))
 ```
 
-Precisely, this is wrong but it is OK. I will explain details of `match-all` in later section.
-
 ## Abstract Data Type
 As you can see in the previous section, you can define abstract data type in Egison.
 `define-ADT` is a syntax for defining ADT.
@@ -107,21 +105,21 @@ As you can see in the previous section, you can define abstract data type in Egi
 (define-ADT "Name of type" <"Name of type constructor" "type1" "type2" ...> <"Name of type constructor" ...>)
 ```
 
-The name of type and names of type constructors must start from captal case.  
+The name of type and names of type constructors must start from a capital case.  
 For example, `PairII` is defined using following code.
 ```
 (define-ADT PairII <Pair Integer Integer>)
 ```
 After you execute above command, data constructor `Pair` and pattern constructor `pair` will be defined.   
-Names of pattern constructors are same with data constructors but pattern constructors are begin with small cases.
+Names of pattern constructors are same with data constructors but pattern constructors are begun with small cases.
 ```
 > (print-type-of Pair)
 Pair :: (Fun (Tuple Integer Integer) PairII
 > (print-type-of pair)
 pair :: (Fun (Tuple (Pattern Integer) (Pattern Integer)) (Pattern PairII))
 ```
-Please be carefull. Pattern constructor is defined ***automatically***.   
-When you define ADT, you must be carefull not to conflict names.   
+Please be careful. Pattern constructor has defined ***automatically***.   
+When you define ADT, you must be careful not to conflict names.   
 You can use `print-type-of` to check whether a name is used or not.
 ```
 > (print-type-of unusedname)
@@ -149,9 +147,9 @@ For examples,
 (define-type-of somevalue (TypeVar PairII))
 ```
 
-### Theoritical Base of Type System of Typed Egison
-Theoritically, the type system of Egison is an extension of symply typed lamnda calculus.  
-I extended symply typed lambda calculus with let polymophism, Collection, Pattern, Matcher.
+### Theoretical Base of Type System of Typed Egison
+Theoretically, the type system of Egison is an extension of simply typed lambda calculus.  
+I extended simply typed lambda calculus with let polymorphism, Collection, Pattern, Matcher.
 
 ### Implicit Conversion
 I made implicit conversion for Egison.  
@@ -160,5 +158,5 @@ You can check the implementation in hs-src/Language/Egison/ImplConv.hs.
 Syntax for implicit conversion are `absolute-implicit-conversion` and `implicit-conversion`.  
 `absolute-implicit-conversion` convert all possible variables absolutely.  
 This means that when you define absolute implicit conversion from String to Integer,  
-all values typed String are converted to Integer absolutely.  
+all values typed String is converted to Integer absolutely.  
 `implicit-conversion` convert all possible variables so that the type check success.  
