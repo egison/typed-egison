@@ -921,6 +921,7 @@ reservedKeywords =
   , "something"
   , "undefined"
   , "implicit-conversion"
+  , "absolute-implicit-conversion"
   , "define-type-of"
   , "Char"
   , "String"
