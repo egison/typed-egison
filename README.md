@@ -127,8 +127,6 @@ You can use `print-type-of` to check whether a name is used or not.
 > (print-type-of unusedname)
 Cannot decide the type of unusedname
 ```
-## Try Mah-jong Example
-
 ## Advanced Topics
 ### Type declaration for built-in functions
 Built-in functions (ex. `b.+`, `eq?`) are defined in Egison interpreter.  
@@ -152,8 +150,15 @@ For examples,
 ```
 
 ### Theoritical Base of Type System of Typed Egison
-
+Theoritically, the type system of Egison is an extension of symply typed lamnda calculus.  
+I extended symply typed lambda calculus with let polymophism, Collection, Pattern, Matcher.
 
 ### Implicit Conversion
-
-### Details of `match-all`
+I made implicit conversion for Egison.  
+But it was not used now in the master branch.  
+You can check the implementation in hs-src/Language/Egison/ImplConv.hs.  
+Syntax for implicit conversion are `absolute-implicit-conversion` and `implicit-conversion`.  
+`absolute-implicit-conversion` convert all possible variables absolutely.  
+This means that when you define absolute implicit conversion from String to Integer,  
+all values typed String are converted to Integer absolutely.  
+`implicit-conversion` convert all possible variables so that the type check success.  
