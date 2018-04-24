@@ -98,8 +98,8 @@ In rough words, `match-all` has this type
 (Fun (Tuple a (Matcher a) (Tuple (Pattern a) b)) (Collection b))
 ```
 
-## Abstract Data Type
-As you can see in the previous section, you can define abstract data type in Egison.
+## Algebraic Data Type
+As you can see in the previous section, you can define algebraic data type in Egison.
 `define-ADT` is a syntax for defining ADT.
 ```
 (define-ADT "Name of type" <"Name of type constructor" "type1" "type2" ...> <"Name of type constructor" ...>)
