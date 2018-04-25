@@ -133,13 +133,6 @@ replace t1 t2 t3 = if t1 == t3
 replaceSubstituition :: Type -> Type -> Substitution -> Substitution
 replaceSubstituition t1 t2 s = map (\(x,y) -> ((replace t1 t2 x), (replace t1 t2 y))) s
 
-isADT :: Type -> Bool
-isADT (TypeVar s) = ord 'A' <= ord (head s) && ord (head s) <= ord 'Z'
-
-isRealTypeVar :: Type -> Bool
-isRealTypeVar t@(TypeVar s) = not $ isADT t
-isRealTypeVar _ = False
-
 unifySub :: Substitution -> MakeSubstitionM Substitution
 unifySub [] = return []
 unifySub ((t1, t2) : r)
@@ -159,13 +152,9 @@ unifySub ((t1, t2) : r)
         (t3,TypeFun (TypeTuple []) t4) -> unifySub $ (t3,t4):r
         (TypeVar tv1,t4) -> if tv1 `elem` freeTypeVarIndex t4
             then throwError "Type variable is occured recursively."
-            else if isADT (TypeVar tv1)
-                  then if isRealTypeVar t4
-                    then unifySub $ (t4, TypeVar tv1) : r
-                    else throwError $ "Try to unify " ++ show t1 ++ " and " ++ show t2
-                  else do
-                    u <- unifySub (replaceSubstituition (TypeVar tv1) t4 r) 
-                    return $ ((applySub u (TypeVar tv1)),(applySub u t4)):u
+            else do
+              u <- unifySub (replaceSubstituition (TypeVar tv1) t4 r) 
+              return $ ((applySub u (TypeVar tv1)),(applySub u t4)):u
         (t4, TypeVar t3) -> unifySub ((TypeVar t3,t4) : r)
         otherwise -> throwError $ "Cannot unify " ++ show t1 ++ " and " ++ show t2
 
