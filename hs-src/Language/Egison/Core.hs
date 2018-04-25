@@ -168,8 +168,8 @@ evalTopExpr env (DefineADT adtname cts) = do
   let cs = map constr cts
   let ps = map pconstr cts
   return (Nothing, extendEnvType (cs ++ ps) env)
-    where constr (s,t) = (Var [s], TypeFun t (TypeVar adtname))
-          pconstr (s,t) = (Var [lower s], TypeFun (ttop t) (TypePattern (TypeVar adtname)))
+    where constr (s,t) = (Var [s], TypeFun t (TypeADT adtname))
+          pconstr (s,t) = (Var [lower s], TypeFun (ttop t) (TypePattern (TypeADT adtname)))
           lower (c:r) = (chr (ord c - (ord 'A' - ord 'a'))) : r
           ttop (TypeTuple ts) = TypeTuple $ map TypePattern ts
 
