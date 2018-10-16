@@ -22,7 +22,7 @@
 (define $float eq)
 
 
-(define-type-of $nil (Pattern (TypeVar a)))
+(define-type-of $nil (Pattern (Collection (TypeVar a))))
 (define-type-of $cons
  (Fun (Tuple (Pattern (TypeVar a)) (Pattern (Collection (TypeVar a))))
   (Pattern (Collection (TypeVar a)))))
