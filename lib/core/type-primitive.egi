@@ -5,38 +5,7 @@
 (define-type-of $eq? (Fun (Tuple (TypeVar a) (TypeVar a)) Bool))
 (define-type-of $lt? (Fun (Tuple (TypeVar a) (TypeVar a)) Bool))
 
-; Following codes are append for README.md. If you want, remove them.
-(define $eq
-  (matcher-dfs
-    {[,$val []
-      {[$tgt (if (eq? val tgt)
-                 {[]}
-                 {})]}]
-     [$ [something]
-      {[$tgt {tgt}]}]
-     }))
-  
-(define $bool eq)
-(define $char eq)
-(define $integer eq)
-(define $float eq)
-
-
-(define-type-of $nil (Pattern (Collection (TypeVar a))))
-(define-type-of $cons
- (Fun (Tuple (Pattern (TypeVar a)) (Pattern (Collection (TypeVar a))))
-  (Pattern (Collection (TypeVar a)))))
-(define-type-of $snoc
- (Fun (Tuple (Pattern (TypeVar a)) (Pattern (Collection (TypeVar a))))
-  (Pattern (Collection (TypeVar a)))))
-(define-type-of $join
- (Fun (Tuple (Pattern (Collection (TypeVar a))) (Pattern (Collection (TypeVar a))))
-  (Pattern (Collection (TypeVar a)))))
-(define-type-of $nioj
- (Fun (Tuple (Pattern (Collection (TypeVar a))) (Pattern (Collection (TypeVar a))))
-  (Pattern (Collection (TypeVar a)))))
-
-
+;; This PairII is appended for README.md.
 (define-ADT PairII <Pair Integer Integer>)
 (define $unorderd-pair
  (lambda [$a]

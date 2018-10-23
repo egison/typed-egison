@@ -136,8 +136,7 @@ topExpr = try (Test <$> expr)
                    <|> absoluteImplicitConversionExpr
                    <|> defineTypeOfExpr
                    <|> defineADTExpr
-                   <|> printTypeOf
-                   <|> disableTypecheckOf))
+                   <|> printTypeOf))
       <?> "top-level expression"
 
 
@@ -186,6 +185,7 @@ parseType = (try keywordTypeChar >> return TypeChar)
             <|> (try keywordTypeString >> return TypeString)
             <|> (try keywordTypeBool >> return TypeBool) 
             <|> (try keywordTypeInt >> return TypeInt)
+            <|> (try keywordTypeAny >> return TypeStar)
             <|> (parens (try parseTypeMatcher
                   <|> try parseTypePattern
                   <|> try parseTypeCollection
@@ -204,7 +204,10 @@ parseTypeCollection :: Parser Type
 parseTypeCollection = keywordTypeCollection >> TypeCollection <$> parseType
 
 parseTypeTuple :: Parser Type
-parseTypeTuple = keywordTypeTuple >> TypeTuple <$> sepEndBy parseType whiteSpace
+parseTypeTuple = do
+  keywordTypeTuple
+  es <- sepEndBy parseType whiteSpace
+  if length es == 1 then return (head es) else return (TypeTuple es)
 
 parseTypeFun :: Parser Type
 parseTypeFun = keywordTypeFun >> TypeFun <$> (parens parseTypeTuple) <*> parseType
@@ -328,7 +331,7 @@ inductiveDataExpr :: Parser Expr
 inductiveDataExpr = angles $ InductiveDataExpr <$> upperName <*> sepEndBy expr whiteSpace
 
 tupleExpr :: Parser Expr
-tupleExpr = brackets $ TupleExpr <$> sepEndBy expr whiteSpace
+tupleExpr = brackets (do {es <- sepEndBy expr whiteSpace; if length es == 1 then return (head es) else return (TupleExpr es)})
 
 collectionExpr :: Parser Expr
 collectionExpr = braces $ CollectionExpr <$> sepEndBy innerExpr whiteSpace
@@ -930,6 +933,7 @@ reservedKeywords =
   , "Tuple"
   , "Collection"
   , "Fun"
+  , "Any"
   , "Matcher"
   , "Pattern"
   , "TypeVar"
@@ -1027,6 +1031,7 @@ keywordTypeChar             = reserved "Char"
 keywordTypeString           = reserved "String"
 keywordTypeBool             = reserved "Bool"
 keywordTypeInt              = reserved "Integer"
+keywordTypeAny              = reserved "Any"
 keywordTypeTuple            = reserved "Tuple"
 keywordTypeCollection       = reserved "Collection"
 keywordTypeFun              = reserved "Fun"

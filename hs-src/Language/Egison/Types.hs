@@ -37,6 +37,8 @@ unusedSuffix = "#"
 finalExprTypeVar = "finalExprTypeVar"
 
 checkTopExpr :: EE.Env -> EE.TopExpr -> Either String Type
+checkTopExpr env (EE.Test (EE.VarExpr vn)) =
+  maybe (Left "This varible doesn't exist in the type environment.") Right (EE.refEnvType vn env) 
 checkTopExpr env (EE.Test e) = do
   (s,_) <- exprToSub env e
   findAns s
@@ -140,6 +142,8 @@ unifySub ((t1, t2) : r)
     | otherwise = case (t1, t2) of
         (TypeStar, _) -> unifySub r
         (_, TypeStar) -> unifySub r
+        (TypeTuple [t3],_) -> unifySub ((t3, t2):r)
+        (_,TypeTuple [t3]) -> unifySub ((t1, t3):r)
         ((TypeFun t3 t4),(TypeFun t5 t6)) -> unifySub ((t3,t5):(t4,t6):r)
         (TypeTuple ts1, TypeTuple ts2) -> if length ts1 == length ts2
           then unifySub $ (zip ts1 ts2) ++ r
@@ -170,7 +174,7 @@ innersToExprs [] = return []
 innersToExprs (EE.ElementExpr e:rest) = (:) <$> (return e) <*> (innersToExprs rest)
 innersToExprs ((EE.SubCollectionExpr (EE.CollectionExpr is)):rest) =
     (++) <$> innersToExprs is <*>  innersToExprs rest
-innersToExprs _ = throwError "Error in innersToExprs."
+innersToExprs e = throwError ("Error in innersToExprs. e = " ++ show e)
 
 lookupTypeSchemeEnv :: EE.Var -> TypeSchemeEnvironment -> MakeSubstitionM TypeScheme
 lookupTypeSchemeEnv e [] = throwError $ "lookupTypeSchemeEnv : Cannot decide the type of " ++ show e
@@ -264,7 +268,8 @@ exprToSub' env ty (EE.LambdaExpr args body) = do
     let env1 = (zip args1 (map (\x -> TypeScheme [] x) arg1tys)) ++ filter (\(v,_) -> not (v `elem` args1)) env
     tv <- getNewTypeVar
     (sub1,ty1) <- exprToSub' env1 tv body
-    sub2 <- unifySub $ (ty, TypeFun (TypeTuple arg1tys) ty1):sub1
+    let arg1tystuple = if length arg1tys == 1 then head arg1tys else TypeTuple arg1tys
+    sub2 <- unifySub $ (ty, TypeFun arg1tystuple ty1):sub1
     return (sub2, applySub sub2 ty)
       where f (EE.TensorArg s) = EE.Var [s]
             f _ = EE.Var []

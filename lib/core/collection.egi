@@ -12,7 +12,6 @@
 (define-type-of $cons
  (Fun (Tuple (Pattern (TypeVar a)) (Pattern (Collection (TypeVar a))))
   (Pattern (Collection (TypeVar a)))))
-(disable-typecheck-of $cons)
 (define $cons
   (lambda [$x $xs] {x @xs}))
 
@@ -29,7 +28,7 @@
   (Pattern (Collection (TypeVar a)))))
 
 ; Note. `between` is used in the definition of the list matcher.
-(disable-typecheck-of $between)
+(define-type-of $between Any)
 (define $between
   (lambda [$s $e]
     (if (eq? s e)
@@ -38,7 +37,7 @@
         {s @(between (+ s 1) e)}
         {}))))
 
-(disable-typecheck-of $L./)
+(define-type-of $L./ Any)
 (define $L./
   (lambda [$xs $ys]
     (if (lt? (length xs) (length ys))
@@ -52,7 +51,6 @@
          }))))
 
 (define-type-of $list (Fun (Tuple (Matcher (TypeVar a))) (Matcher (Collection (TypeVar a)))))
-(disable-typecheck-of $list)
 (define $list
   (lambda [$a]
     (matcher
@@ -83,7 +81,6 @@
 ;;; Multiset
 ;;;
 (define-type-of $multiset (Fun (Tuple (Matcher (TypeVar a))) (Matcher (Collection (TypeVar a)))))
-(disable-typecheck-of $multiset)
 (define $multiset
   (lambda [$a]
     (matcher
@@ -114,7 +111,7 @@
        })))
 
 
-(disable-typecheck-of $sorted-list)
+(define-type-of $sorted-list (Fun (Tuple (Matcher (TypeVar a))) (Matcher (Collection (TypeVar a)))))
 (define $sorted-list
   (lambda [$a]
     (matcher
@@ -143,7 +140,7 @@
 ;;
 ;; Accessors
 ;;
-(disable-typecheck-of $nth)
+(define-type-of $nth Any)
 (define $nth
   (lambda [$n $xs]
     (match xs (list something)
@@ -152,14 +149,14 @@
           <cons $x _>)
         x]})))
 
-(disable-typecheck-of $take-and-drop)
+(define-type-of $take-and-drop Any)
 (define $take-and-drop
   (lambda [$n $xs]
     (match xs (list something)
       {[(loop $i [1 n] <cons $a_i ...> $rs)
         [(map (lambda [$i] a_i) (between 1 n)) rs]]})))
 
-(disable-typecheck-of $take)
+(define-type-of $take Any)
 (define $take
   (lambda [$n $xs]
     (if (eq? n 0)
@@ -168,7 +165,7 @@
           {[<cons $x $xs> {x @(take (- n 1) xs)}]
            [<nil> {}]}))))
 
-(disable-typecheck-of $drop)
+(define-type-of $drop Any)
 (define $drop
   (lambda [$n $xs]
     (if (eq? n 0)
@@ -177,7 +174,7 @@
           {[<cons _ $xs> (drop (- n 1) xs)]
            [<nil> {}]}))))
 
-(disable-typecheck-of $take-while)
+(define-type-of $take-while Any)
 (define $take-while
   (lambda [$pred $xs]
     (match xs (list something)
@@ -187,7 +184,7 @@
             {x @(take-while pred rs)}
             {})]})))
 
-(disable-typecheck-of $take-while-by)
+(define-type-of $take-while-by Any)
 (define $take-while-by
   (lambda [$pred $xs]
     (match xs (list something)
@@ -197,7 +194,7 @@
             {x @(take-while-by pred rs)}
             {x})]})))
 
-(disable-typecheck-of $take-until)
+(define-type-of $take-until Any)
 (define $take-until
   (lambda [$pred $xs]
     (match xs (list something)
@@ -207,7 +204,7 @@
             {x @(take-until pred rs)}
             {})]})))
 
-(disable-typecheck-of $take-until-by)
+(define-type-of $take-until-by Any)
 (define $take-until-by
   (lambda [$pred $xs]
     (match xs (list something)
@@ -217,7 +214,7 @@
             {x @(take-until-by pred rs)}
             {x})]})))
 
-(disable-typecheck-of $drop-while)
+(define-type-of $drop-while Any)
 (define $drop-while
   (lambda [$pred $xs]
     (match xs (list something)
@@ -253,19 +250,22 @@
 ;;
 ;; list functions
 ;;
-(disable-typecheck-of $length)
+
+;; Define the type of $foldl to use here
+(define-type-of $foldl Any)
+
 (define $length
   (lambda [$xs]
     (foldl (lambda [$r $x] (b.+ r 1)) 0 xs)))
 
-(disable-typecheck-of $map)
+(define-type-of $map Any)
 (define $map
   (lambda [$fn $xs]
     (match xs (list something)
       {[<nil> {}]
        [<cons $x $rs> {(fn x) @(map fn rs)}]})))
 
-(disable-typecheck-of $map2)
+(define-type-of $map2 Any)
 (define $map2
   (lambda [$fn $xs $ys]
     (match [xs ys] [(list something) (list something)]
@@ -274,7 +274,7 @@
        [[<cons $x $xs2> <cons $y $ys2>]
         {(fn x y) @(map2 fn xs2 ys2)}]})))
 
-(disable-typecheck-of $map3)
+(define-type-of $map3 Any)
 (define $map3
   (lambda [$fn $xs $ys $zs]
     (match [xs ys zs] [(list something) (list something) (list something)]
@@ -284,7 +284,7 @@
        [[<cons $x $xs2> <cons $y $ys2> <cons $z $zs2>]
         {(fn x y z) @(map3 fn xs2 ys2 zs2)}]})))
 
-(disable-typecheck-of $map4)
+(define-type-of $map4 Any)
 (define $map4
   (lambda [$fn $xs $ys $zs $ws]
     (match [xs ys zs ws] [(list something) (list something) (list something) (list something)]
@@ -295,42 +295,41 @@
        [[<cons $x $xs2> <cons $y $ys2> <cons $z $zs2> <cons $w $ws2>]
         {(fn x y z w) @(map4 fn xs2 ys2 zs2 ws2)}]})))
 
-(disable-typecheck-of $filter)
+(define-type-of $filter Any)
 (define $filter
   (lambda [$pred $xs]
     (foldr (lambda [%y %ys] (if (pred y) {y @ys} ys))
            {}
            xs)))
-(disable-typecheck-of $partition)
+(define-type-of $partition Any)
 (define $partition
   (lambda [$pred $xs]
     [(filter pred xs) (filter 1#(not (pred %1)) xs)]))
-(disable-typecheck-of $zip)
+;;(define-type-of $zip Any)
 (define $zip
   (lambda [$xs $ys]
     (map2 (lambda [$x $y] [x y]) xs ys)))
-(disable-typecheck-of $zip3)
+;;(define-type-of $zip3 Any)
 (define $zip3
   (lambda [$xs $ys $zs]
     (map3 (lambda [$x $y $z] [x y z]) xs ys zs)))
-(disable-typecheck-of $zip4)
+;;(define-type-of $zip4 Any)
 (define $zip4
   (lambda [$xs $ys $zs $ws]
     (map4 (lambda [$x $y $z $w] [x y z w]) xs ys zs ws)))
-(disable-typecheck-of $lookup)
+(define-type-of $lookup Any)
 (define $lookup
   (lambda [$k $ls]
     (match ls (list [something something])
       {[<join _ <cons [,k $x] _>> x]})))
 
-; Note. `(disable-typecheck-of $foldr)foldr` is used in the definition of the list matcher.
+(define-type-of $foldr Any)
 (define $foldr
   (lambda [$fn %init %ls]
     (match ls (list something)
       {[<nil> init]
        [<cons $x $xs> (fn x (foldr fn init xs))]})))
 
-(disable-typecheck-of $foldl)
 (define $foldl
   (lambda [$fn %init %ls]
     (match ls (list something)
@@ -339,17 +338,17 @@
         (let {[$z (fn init x)]}
           (seq z (foldl fn z xs)))]})))
 
-(disable-typecheck-of $reduce)
+(define-type-of $reduce Any)
 (define $reduce
   (lambda [$fn %ls]
     (foldl fn (car ls) (cdr ls))))
-(disable-typecheck-of $scanl)
+(define-type-of $scanl Any)
 (define $scanl
   (lambda [$fn %init %ls]
     {init @(match ls (list something)
              {[<nil> {}]
               [<cons $x $xs> (scanl fn (fn init x) xs)]})}))
-(disable-typecheck-of $iterate)
+(define-type-of $iterate Any)
 (define $iterate
   (lambda [$fn %x]
     (let* {[$nx1 (fn x)]
@@ -359,7 +358,7 @@
            [$nx5 (fn nx4)]}
       {x nx1 nx2 nx3 nx4 @(iterate fn nx5)})))
 
-(disable-typecheck-of $repeated-squaring)
+(define-type-of $repeated-squaring Any)
 (define $repeated-squaring
   (lambda [$fn %x $n]
     (match n integer
@@ -369,18 +368,18 @@
        [?odd? (let {[$y (repeated-squaring fn x (quotient n 2))]}
                 (fn (fn y y) x))]})))
 
-(disable-typecheck-of $append)
+(define-type-of $append Any)
 (define $append
   (lambda [$xs $ys]
     {@xs @ys}))
 
-(disable-typecheck-of $concat)
+(define-type-of $concat Any)
 (define $concat
   (lambda [$xss]
     (foldr (lambda [%xs %rs] {@xs @rs})
            {}
            xss)))
-(disable-typecheck-of $reverse)
+(define-type-of $reverse Any)
 (define $reverse
   (lambda [$xs]
     (match xs (list something)
@@ -388,31 +387,31 @@
        [<snoc $x $rs>
         {x @(reverse rs)}]})))
 
-(disable-typecheck-of $intersperse)
+(define-type-of $intersperse Any)
 (define $intersperse
   (lambda [$in $ws]
     (match ws (list something)
       {[<nil> {}]
        [<cons $w $rs> (foldl (lambda [$s1 $s2] {@s1 in s2}) {w} rs)]})))
 
-(disable-typecheck-of $intercalate )
+(define-type-of $intercalate Any)
 (define $intercalate (compose intersperse concat))
 
-(disable-typecheck-of $split)
+(define-type-of $split Any)
 (define $split
   (lambda [$in $ls]
     (match ls (list something)
       {[<join $xs <join ,in $rs>> {xs @(split in rs)}]
        [_ {ls}]})))
 
-(disable-typecheck-of $split/m)
+(define-type-of $split/m Any)
 (define $split/m
   (lambda [$a $in $ls]
     (match ls (list a)
       {[<join $xs <join ,in $rs>> {xs @(split/m a in rs)}]
        [_ {ls}]})))
 
-(disable-typecheck-of $find-cycle)
+(define-type-of $find-cycle Any)
 (define $find-cycle
   (lambda [$xs]
     (car (concat (match-all xs (list something)
@@ -421,19 +420,19 @@
                       [<join $hs <cons ,x $ms>>
                        [hs {x @ms}]])])))))
 
-(disable-typecheck-of $repeat)
+(define-type-of $repeat Any)
 (define $repeat
   (lambda [%xs]
     {@xs @(repeat xs)}))
 
-(disable-typecheck-of $repeat1)
+(define-type-of $repeat1 Any)
 (define $repeat1
   (lambda [%x]
     {x @(repeat1 x)}))
 
 ;;
 ;; Others
-(disable-typecheck-of $all);
+;;(define-type-of $all Any);
 (define $all
   (lambda [$pred $xs]
     (match xs (list something)
@@ -443,7 +442,7 @@
             (all pred rs)
             #f)]})))
 
-(disable-typecheck-of $any)
+;;(define-type-of $any Any)
 (define $any
   (lambda [$pred $xs]
     (match xs (list something)
@@ -454,7 +453,7 @@
             (any pred rs))]})))
 
 
-(disable-typecheck-of $from)
+(define-type-of $from Any)
 (define $from
   (lambda [$s]
     {s (+ s 1) (+ s 2) (+ s 3) (+ s 4) (+ s 5) (+ s 6) (+ s 7) (+ s 8) (+ s 9) (+ s 10) @(from (+ s 11))}))
@@ -464,21 +463,21 @@
 ;; multiset operation
 ;;
 
-(disable-typecheck-of $add);
+(define-type-of $add Any);
 (define $add
   (lambda [$x $xs]
     (if (member? x xs)
       xs
       {@xs x})))
 
-(disable-typecheck-of $add/m)
+(define-type-of $add/m Any)
 (define $add/m
   (lambda [$a $x $xs]
     (if (member?/m a x xs)
       xs
       {@xs x})))
 
-(disable-typecheck-of $delete-first)
+(define-type-of $delete-first Any)
 (define $delete-first
   (lambda [$x $xs]
     (match xs (list something)
@@ -486,7 +485,7 @@
        [<cons ,x $rs> rs]
        [<cons $y $rs> {y @(delete-first x rs)}]})))
 
-(disable-typecheck-of $delete-first/m)
+(define-type-of $delete-first/m Any)
 (define $delete-first/m
   (lambda [$a $x $xs]
     (match xs (list a)
@@ -494,7 +493,7 @@
        [<cons ,x $rs> rs]
        [<cons $y $rs> {y @(delete-first/m a x rs)}]})))
 
-(disable-typecheck-of $delete)
+(define-type-of $delete Any)
 (define $delete
   (lambda [$x $xs]
     (match xs (list something)
@@ -502,7 +501,7 @@
        [<join $hs <cons ,x $ts>> {@hs @(delete x ts)}]
        [_ xs]})))
 
-(disable-typecheck-of $delete/m)
+(define-type-of $delete/m Any)
 (define $delete/m
   (lambda [$a $x $xs]
     (match xs (list a)
@@ -510,21 +509,21 @@
        [<join $hs <cons ,x $ts>> {@hs @(delete/m a x ts)}]
        [_ xs]})))
 
-(disable-typecheck-of $difference)
+(define-type-of $difference Any)
 (define $difference
   (lambda [$xs $ys]
     (match ys (list something)
       {[<nil> xs]
        [<cons $y $rs> (difference (delete-first y xs) rs)]})))
 
-(disable-typecheck-of $difference/m)
+(define-type-of $difference/m Any)
 (define $difference/m
   (lambda [$a $xs $ys]
     (match ys (list a)
       {[<nil> xs]
        [<cons $y $rs> (difference/m a (delete-first/m a y xs) rs)]})))
 
-(disable-typecheck-of $include?)
+(define-type-of $include? Any)
 (define $include?
   (lambda [$xs $ys]
     (match ys (list something)
@@ -534,7 +533,7 @@
           (include? (delete-first y xs) rs)
           #f)]})))
 
-(disable-typecheck-of $include?/m)
+(define-type-of $include?/m Any)
 (define $include?/m
   (lambda [$a $xs $ys]
     (match ys (list a)
@@ -544,7 +543,7 @@
           (include?/m a (delete-first y xs) rs)
           #f)]})))
 
-(disable-typecheck-of $union)
+(define-type-of $union Any)
 (define $union
   (lambda [$xs $ys]
     {@xs
@@ -552,7 +551,7 @@
         [[<cons $y _> !<cons ,y _>] y])
      }))
 
-(disable-typecheck-of $union/m)
+(define-type-of $union/m Any)
 (define $union/m
   (lambda [$a $xs $ys]
     {@xs
@@ -560,13 +559,13 @@
         [[<cons $y _> !<cons ,y _>] y])
      }))
 
-(disable-typecheck-of $intersect)
+(define-type-of $intersect Any)
 (define $intersect
   (lambda [$xs $ys]
     (match-all [xs ys] [(multiset something) (multiset something)]
       [[<cons $x _> <cons ,x _>] x])))
 
-(disable-typecheck-of $intersect/m)
+(define-type-of $intersect/m Any)
 (define $intersect/m
   (lambda [$a $xs $ys]
     (match-all [xs ys] [(multiset a) (multiset a)]
@@ -576,14 +575,14 @@
 ;; Simple predicate
 ;;
 
-(disable-typecheck-of $member?);
+;;(define-type-of $member? Any)
 (define $member?
   (lambda [$x $ys]
     (match ys (list something)
       {[<join _ <cons ,x _>> #t]
        [_ #f]})))
 
-(disable-typecheck-of $member?/m)
+;;(define-type-of $member?/m Any)
 (define $member?/m
   (lambda [$a $x $ys]
     (match ys (list a)
@@ -593,7 +592,8 @@
 ;;
 ;; Counting
 ;;
-(disable-typecheck-of $count)
+
+;;(define-type-of $count Any)
 (define $count
   (lambda [$x $xs]
     (foldl (match-lambda [something something]
@@ -602,7 +602,7 @@
            0
            xs)))
 
-(disable-typecheck-of $count/m)
+;;(define-type-of $count/m Any)
 (define $count/m
   (lambda [$a $x $xs]
     (foldl (match-lambda [a a]
@@ -611,13 +611,13 @@
            0
            xs)))
 
-(disable-typecheck-of $frequency)
+(define-type-of $frequency Any)
 (define $frequency
   (lambda [$xs]
     (let {[$us (unique xs)]}
       (map (lambda [$u] [u (count u xs)]) us))))
 
-(disable-typecheck-of $frequency/m)
+(define-type-of $frequency/m Any)
 (define $frequency/m
   (lambda [$a $xs]
     (let {[$us (unique/m a xs)]}
@@ -626,7 +626,7 @@
 ;;
 ;; Index
 ;;
-(disable-typecheck-of $elemIndices)
+;;(define-type-of $elemIndices Any)
 (define $elemIndices
   (lambda [$x $xs]
     (match-all xs (list something)
@@ -635,7 +635,7 @@
 ;;;
 ;;; Set
 ;;;
-(disable-typecheck-of $set)
+(define-type-of $set Any)
 (define $set
   (lambda [$a]
     (matcher
@@ -668,13 +668,13 @@
 
 ;; set operation
 
-(disable-typecheck-of $unique)
+(define-type-of $unique Any)
 (define $unique
   (lambda [$xs]
     (match-all (sort xs) (list something)
       [<join _ <cons $x !<cons ,x _>>> x])))
 
-(disable-typecheck-of $unique/m)
+(define-type-of $unique/m Any)
 (define $unique/m
   (lambda [$a $xs]
     (letrec {[$loop-fn

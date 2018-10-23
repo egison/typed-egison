@@ -336,7 +336,7 @@ data Expr =
 
   | SomethingExpr
   | UndefinedExpr
- deriving (Show, Eq)
+ deriving (Eq)
 
 data Arg =
     ScalarArg String
@@ -1215,26 +1215,26 @@ type Matcher = EgisonValue
 
 type PrimitiveFunc = WHNFData -> EgisonM WHNFData
 
--- instance Show Expr where
---   show (CharExpr c) = "c#" ++ [c]
---   show (StringExpr str) = "\"" ++ T.unpack str ++ "\""
---   show (BoolExpr True) = "#t"
---   show (BoolExpr False) = "#f"
---   show (IntegerExpr n) = show n
---   show (FloatExpr x y) = showComplexFloat x y
---   show (VarExpr name) = show name
---   show (PartialVarExpr n) = "%" ++ show n
---   show (FunctionExpr args) = "function [" ++ unwords (map show args) ++ "]"
---   show (ApplyExpr fn (TupleExpr [])) = "(" ++ show fn ++ ")"
---   show (ApplyExpr fn (TupleExpr args)) = "(" ++ show fn ++ " " ++ unwords (map show args) ++ ")"
---   show (ApplyExpr fn arg) = "(" ++ show fn ++ " " ++ show arg ++ ")"
---   show (TupleExpr es) = "[" ++ (intercalate " " (map show es)) ++ "]"
---   show (CollectionExpr es) = "{" ++ (intercalate " " (map show (f es))) ++ "}"
---     where
---       f [] = []
---       f (ElementExpr e:rest) = e:(f rest)
---       f ((SubCollectionExpr (CollectionExpr is)):rest) = f is ++ f rest
---   show (LambdaExpr as e) = "(lambda [" ++ (intercalate " " (map show as)) ++ "] " ++ show e ++ ")"
+instance Show Expr where
+  show (CharExpr c) = "c#" ++ [c]
+  show (StringExpr str) = "\"" ++ T.unpack str ++ "\""
+  show (BoolExpr True) = "#t"
+  show (BoolExpr False) = "#f"
+  show (IntegerExpr n) = show n
+  show (FloatExpr x y) = showComplexFloat x y
+  show (VarExpr name) = show name
+  show (PartialVarExpr n) = "%" ++ show n
+  show (FunctionExpr args) = "function [" ++ unwords (map show args) ++ "]"
+  show (ApplyExpr fn (TupleExpr [])) = "(" ++ show fn ++ ")"
+  show (ApplyExpr fn (TupleExpr args)) = "(" ++ show fn ++ " " ++ unwords (map show args) ++ ")"
+  show (ApplyExpr fn arg) = "(" ++ show fn ++ " " ++ show arg ++ ")"
+  show (TupleExpr es) = "[" ++ (intercalate " " (map show es)) ++ "]"
+  show (CollectionExpr es) = "{" ++ (intercalate " " (map show (f es))) ++ "}"
+    where
+      f [] = []
+      f (ElementExpr e:rest) = e:(f rest)
+      f ((SubCollectionExpr (CollectionExpr is)):rest) = f is ++ f rest
+  show (LambdaExpr as e) = "(lambda [" ++ (intercalate " " (map show as)) ++ "] " ++ show e ++ ")"
 
 
 instance Show EgisonValue where

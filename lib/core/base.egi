@@ -22,38 +22,39 @@
 ;;
 ;; Utility
 ;;
-(disable-typecheck-of $id)
+
+(define-type-of $id Any)
 (define $id 1#%1)
 
-(disable-typecheck-of $fst)
+(define-type-of $fst Any)
 (define $fst 2#%1)
 
-(disable-typecheck-of $snd)
+(define-type-of $snd Any)
 (define $snd 2#%2)
 
-(disable-typecheck-of $b.compose)
+(define-type-of $b.compose Any)
 (define $b.compose
   (lambda [$f $g]
     (lambda $x
       (apply g (apply f x)))))
 
-(disable-typecheck-of $compose)
+(define-type-of $compose Any)
 (define $compose
   (cambda $fs
     (lambda $x
       (foldl 2#(%2 %1) x fs))))
 
-(disable-typecheck-of $flip)
+;;(define-type-of $flip Any)
 (define $flip (lambda [$fn] (lambda [$x $y] (fn y x))))
 
-(disable-typecheck-of $ref)
+(define-type-of $ref Any)
 (define $ref
   (lambda [%xa $is]
     (match is (list integer)
       {[<nil> xa]
        [<cons $i $rs> (ref (array-ref xa i) rs)]})))
 
-(disable-typecheck-of $eq/m)
+(define-type-of $eq/m Any)
 (define $eq?/m
   (lambda [$a $x $y]
     (match x a
@@ -63,26 +64,28 @@
 ;;
 ;; Boolean
 ;;
-(disable-typecheck-of $and)
+
+(define-type-of $and Any)
 (define $and (cambda $bs (foldl b.and #t bs)))
-(disable-typecheck-of $or)
+
+(define-type-of $or Any)
 (define $or (cambda $bs (foldl b.or #f bs)))
 
-(disable-typecheck-of $b.and)
+;;(define-type-of $b.and Any)
 (define $b.and
   (lambda [$b1 $b2]
     (if b1
         b2
         #f)))
 
-(disable-typecheck-of $b.or)
+;;(define-type-of $b.or Any)
 (define $b.or
   (lambda [$b1 $b2]
     (if b1
         #t
         b2)))
 
-(disable-typecheck-of $not)
+;;(define-type-of $not Any)
 (define $not
   (lambda [$b]
     (match b bool

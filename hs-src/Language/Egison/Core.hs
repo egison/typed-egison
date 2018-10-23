@@ -134,7 +134,7 @@ evalTopExprsWithoutLoad env (t:rest) = do
 -- The return value is (output string, environment)
 evalTopExpr :: Env -> TopExpr -> EgisonM (Maybe String, Env)
 evalTopExpr env (Define name expr) =
-  if refEnvDisableTypecheck (stringToVar $ show name) env
+  if refEnvType (stringToVar $ show name) env /= Nothing
     then
       recursiveBind env [((stringToVar $ show name), expr)] >>= return . (Nothing,)
     else
