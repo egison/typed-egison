@@ -8,13 +8,13 @@ This module provides utility functions.
 
 module Language.Egison.Util (getEgisonExpr, getEgisonExprOrNewLine, completeEgison) where
 
-import Data.List
-import Text.Regex.TDFA
-import System.Console.Haskeline hiding (handle, catch, throwTo)
-import Control.Monad.Except (liftIO)
+import           Control.Monad.Except        (liftIO)
+import           Data.List
+import           System.Console.Haskeline    hiding (catch, handle, throwTo)
+import           Text.Regex.TDFA
 
-import Language.Egison.Expressions
-import Language.Egison.Parser
+import           Language.Egison.Expressions
+import           Language.Egison.Parser
 
 -- |Get Egison expression from the prompt. We can handle multiline input.
 getEgisonExpr :: String -> InputT IO (Maybe (String, TopExpr))
@@ -24,7 +24,7 @@ getEgisonExpr' :: String -> String -> InputT IO (Maybe (String, TopExpr))
 getEgisonExpr' prompt prev = do
   mLine <- case prev of
              "" -> getInputLine prompt
-             _ -> getInputLine $ take (length prompt) (repeat ' ')
+             _  -> getInputLine $ take (length prompt) (repeat ' ')
   case mLine of
     Nothing -> return Nothing
     Just [] -> do
@@ -49,7 +49,7 @@ getEgisonExprOrNewLine' :: String -> String -> InputT IO (Either (Maybe String) 
 getEgisonExprOrNewLine' prompt prev = do
   mLine <- case prev of
              "" -> getInputLine prompt
-             _ -> getInputLine $ take (length prompt) (repeat ' ')
+             _  -> getInputLine $ take (length prompt) (repeat ' ')
   case mLine of
     Nothing -> return $ Left Nothing
     Just [] -> return $ Left $ Just ""
@@ -99,7 +99,7 @@ egisonKeywords = egisonPrimitivesAfterOpenParen ++ egisonKeywordsAfterOpenParen 
 
 completeParen :: Monad m => CompletionFunc m
 completeParen (lstr, _) = case (closeParen lstr) of
-  Nothing -> return (lstr, [])
+  Nothing    -> return (lstr, [])
   Just paren -> return (lstr, [(Completion paren paren False)])
 
 closeParen :: String -> Maybe String
@@ -114,19 +114,19 @@ removeCharAndStringLiteral ('\'':str) = removeCharAndStringLiteral' str
 removeCharAndStringLiteral (c:str) = c:(removeCharAndStringLiteral str)
 
 removeCharAndStringLiteral' :: String -> String
-removeCharAndStringLiteral' [] = []
-removeCharAndStringLiteral' ('"':'\\':str) = removeCharAndStringLiteral' str
-removeCharAndStringLiteral' ('"':str) = removeCharAndStringLiteral str
+removeCharAndStringLiteral' []              = []
+removeCharAndStringLiteral' ('"':'\\':str)  = removeCharAndStringLiteral' str
+removeCharAndStringLiteral' ('"':str)       = removeCharAndStringLiteral str
 removeCharAndStringLiteral' ('\'':'\\':str) = removeCharAndStringLiteral' str
-removeCharAndStringLiteral' ('\'':str) = removeCharAndStringLiteral str
-removeCharAndStringLiteral' (_:str) = removeCharAndStringLiteral' str
+removeCharAndStringLiteral' ('\'':str)      = removeCharAndStringLiteral str
+removeCharAndStringLiteral' (_:str)         = removeCharAndStringLiteral' str
 
 closeParen' :: Integer -> String -> Maybe String
-closeParen' _ [] = Nothing
-closeParen' 0 ('(':_) = Just ")"
-closeParen' 0 ('<':_) = Just ">"
-closeParen' 0 ('[':_) = Just "]"
-closeParen' 0 ('{':_) = Just "}"
+closeParen' _ []        = Nothing
+closeParen' 0 ('(':_)   = Just ")"
+closeParen' 0 ('<':_)   = Just ">"
+closeParen' 0 ('[':_)   = Just "]"
+closeParen' 0 ('{':_)   = Just "}"
 closeParen' n ('(':str) = closeParen' (n - 1) str
 closeParen' n ('<':str) = closeParen' (n - 1) str
 closeParen' n ('[':str) = closeParen' (n - 1) str
@@ -135,4 +135,4 @@ closeParen' n (')':str) = closeParen' (n + 1) str
 closeParen' n ('>':str) = closeParen' (n + 1) str
 closeParen' n (']':str) = closeParen' (n + 1) str
 closeParen' n ('}':str) = closeParen' (n + 1) str
-closeParen' n (_:str) = closeParen' n str
+closeParen' n (_:str)   = closeParen' n str

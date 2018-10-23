@@ -11,18 +11,20 @@ module Language.Egison.Types(
   checkTopExpr
   )where
 
+import           Control.Monad.Except        (throwError)
+import           Control.Monad.State         (State, evalState, get, put,
+                                              runState)
+import           Control.Monad.Trans.Except  (ExceptT, catchE, runExceptT)
+import           Data.Char                   (chr, ord)
+import           Data.IORef                  (IORef, newIORef, readIORef,
+                                              writeIORef)
+import           Data.List                   (nub)
+import           Data.Maybe                  (fromMaybe)
+import           Debug.Trace
+import           Debug.Trace
+import           Language.Egison.Expressions (Type (..), TypeVarIndex)
 import qualified Language.Egison.Expressions as EE
-import Language.Egison.Expressions (Type(..), TypeVarIndex)
-import Control.Monad.State (State,evalState,get,put,runState)
-import Control.Monad.Trans.Except (ExceptT,runExceptT,catchE)
-import Control.Monad.Except(throwError)
-import Data.Maybe (fromMaybe)
-import Data.List (nub)
-import Debug.Trace
-import Data.IORef (newIORef, readIORef, writeIORef, IORef)
-import System.IO.Unsafe (unsafePerformIO)
-import Debug.Trace
-import Data.Char (ord,chr)
+import           System.IO.Unsafe            (unsafePerformIO)
 
 -- First element of Restriction will be type valiable.
 -- Second element of Restriction is what the first element refer.
@@ -38,7 +40,7 @@ finalExprTypeVar = "finalExprTypeVar"
 
 checkTopExpr :: EE.Env -> EE.TopExpr -> Either String Type
 checkTopExpr env (EE.Test (EE.VarExpr vn)) =
-  maybe (Left "This varible doesn't exist in the type environment.") Right (EE.refEnvType vn env) 
+  maybe (Left "This varible doesn't exist in the type environment.") Right (EE.refEnvType vn env)
 checkTopExpr env (EE.Test e) = do
   (s,_) <- exprToSub env e
   findAns s
@@ -56,7 +58,7 @@ checkTopExpr env (EE.Define (EE.VarWithIndexType vn _) exp) = do
       where
         check = case evalState (runExceptT (unifySub [(ty,ty')])) "###" of
           Right _ -> True
-          Left _ -> False
+          Left _  -> False
 checkTopExpr env _ = Right TypeStar
 
 typeVarIndexCache :: IORef TypeVarIndex
@@ -65,7 +67,7 @@ typeVarIndexCache = unsafePerformIO $ newIORef "b"
 nextString :: String -> String
 nextString s = itos (stoi s + 1)
   where
-    stoi "" = 0
+    stoi ""       = 0
     stoi (a:rest) = (ord a - ord 'a') + stoi rest * 26
     itos i = if i < 26 then [chr (i + ord 'a')] else chr (i`mod`26 + ord 'a') : itos (i`div`26)
 
@@ -83,9 +85,9 @@ exprToSubIO env exp = do
 
 typeToTypeScheme :: TypeSchemeEnvironment -> Type -> TypeScheme
 typeToTypeScheme env ty = TypeScheme (freeTypeVarIndex ty) ty
-  where env2tvis [] = []
+  where env2tvis []            = []
         env2tvis ((_,ts):rest) = freetvis ts ++ env2tvis rest
-        freetvis (TypeScheme is t) = filter (\x -> not $ x `elem` is) $ freeTypeVarIndex t 
+        freetvis (TypeScheme is t) = filter (\x -> not $ x `elem` is) $ freeTypeVarIndex t
 
 applySub :: Substitution -> Type -> Type
 applySub s (TypeVar i) = fromMaybe (TypeVar i) (lookup (TypeVar i) s)
@@ -123,13 +125,13 @@ replace :: Type -> Type -> Type -> Type
 replace t1 t2 t3 = if t1 == t3
   then t2
   else case t3 of
-    TypeFun t4 t5 -> TypeFun (replace t1 t2 t4) (replace t1 t2 t5)
-    TypeTuple ts -> TypeTuple (map (replace t1 t2) ts)
-    TypeCollection t -> TypeCollection (replace t1 t2 t)
-    TypePattern t -> TypePattern (replace t1 t2 t)
-    TypeMatcher t -> TypeMatcher (replace t1 t2 t)
+    TypeFun t4 t5       -> TypeFun (replace t1 t2 t4) (replace t1 t2 t5)
+    TypeTuple ts        -> TypeTuple (map (replace t1 t2) ts)
+    TypeCollection t    -> TypeCollection (replace t1 t2 t)
+    TypePattern t       -> TypePattern (replace t1 t2 t)
+    TypeMatcher t       -> TypeMatcher (replace t1 t2 t)
     TypeMatcherClause t -> TypeMatcherClause (replace t1 t2 t)
-    _ -> t3
+    _                   -> t3
 
 -- replace all t1 in s with t2
 replaceSubstituition :: Type -> Type -> Substitution -> Substitution
@@ -157,7 +159,7 @@ unifySub ((t1, t2) : r)
         (TypeVar tv1,t4) -> if tv1 `elem` freeTypeVarIndex t4
             then throwError "Type variable is occured recursively."
             else do
-              u <- unifySub (replaceSubstituition (TypeVar tv1) t4 r) 
+              u <- unifySub (replaceSubstituition (TypeVar tv1) t4 r)
               return $ ((applySub u (TypeVar tv1)),(applySub u t4)):u
         (t4, TypeVar t3) -> unifySub ((TypeVar t3,t4) : r)
         otherwise -> throwError $ "Cannot unify " ++ show t1 ++ " and " ++ show t2
@@ -190,7 +192,7 @@ instantiateTypeScheme (TypeScheme tvis ty) = do
   return $ applySub sub ty
 
 
--- There is TypeEnvironment in return value. 
+-- There is TypeEnvironment in return value.
 -- This is because new variables in pattern can be used in return expression.
 -- For example, look following Egison program.
 -- (match-all {1 2 3} (list integer) [<cons $x $xs> [x xs]])
@@ -272,7 +274,7 @@ exprToSub' env ty (EE.LambdaExpr args body) = do
     sub2 <- unifySub $ (ty, TypeFun arg1tystuple ty1):sub1
     return (sub2, applySub sub2 ty)
       where f (EE.TensorArg s) = EE.Var [s]
-            f _ = EE.Var []
+            f _                = EE.Var []
 
 exprToSub' env ty (EE.ApplyExpr fun arg) = do
     tv <- getNewTypeVar
@@ -305,7 +307,7 @@ exprToSub' env ty (EE.LetExpr binds body) = do
     sub4 <- unifySub $ sub2 ++ sub3
     return (sub4, applySub sub4 ty)
       where f (([EE.Var s],_)) = EE.Var s
-            f _ = EE.Var []
+            f _                = EE.Var []
 
 exprToSub' env ty (EE.LetRecExpr binds body) = do
     let names = map f binds
@@ -313,11 +315,11 @@ exprToSub' env ty (EE.LetRecExpr binds body) = do
     tys <- mapM (g . snd) binds
     let env1 = zip names (map (\x -> TypeScheme [] x) tys) ++ env
     sts <- mapM (\(x,y) -> exprToSub' env1 x y) $ zip tys exs
-    
+
     sub1 <- unifySub $ concat $ map fst sts
     let env2 = applySubEnv (sub1) env1
     (sub2, ty2) <- exprToSub' (env2) (ty) (body)
-    
+
     sub3 <- unifySub $ sub1 ++ sub2
     let ret = applySub sub3 ty
     return (sub3, (ret))

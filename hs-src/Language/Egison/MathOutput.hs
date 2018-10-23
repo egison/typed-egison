@@ -8,13 +8,13 @@ This module provides utility functions.
 
 module Language.Egison.MathOutput (mathExprToHaskell, mathExprToAsciiMath, mathExprToLatex) where
 
-import Control.Monad
-import System.Environment
-import Text.ParserCombinators.Parsec hiding (spaces)
+import           Control.Monad
+import           System.Environment
+import           Text.ParserCombinators.Parsec hiding (spaces)
 
 mathExprToHaskell :: String -> String
 mathExprToHaskell input = case parse parseExpr "math-expr" input of
-                            Left err -> input
+                            Left err  -> input
                             Right val -> "#haskell\"" ++ show val ++ "\""
 
 mathExprToAsciiMath :: String -> String
@@ -51,7 +51,7 @@ data MathIndex = Super MathExpr
 
 showMathIndexAsciiMath :: MathIndex -> String
 showMathIndexAsciiMath (Super a) = showMathExprAsciiMath a
-showMathIndexAsciiMath (Sub a) = showMathExprAsciiMath a
+showMathIndexAsciiMath (Sub a)   = showMathExprAsciiMath a
 
 showMathExprAsciiMath :: MathExpr -> String
 showMathExprAsciiMath (Atom func) = func
@@ -85,7 +85,7 @@ showMathExprAsciiMath (Exp x) = "e^(" ++ showMathExprAsciiMath x ++ ")"
 isSub :: MathIndex -> Bool
 isSub x = case x of
             Sub _ -> True
-            _ -> False
+            _     -> False
 
 showMathExprAsciiMath' :: MathExpr -> String
 showMathExprAsciiMath' (Plus lvs) = "(" ++ showMathExprAsciiMath (Plus lvs) ++ ")"
@@ -136,7 +136,7 @@ showMathExprLatex (Quote x) = "(" ++ showMathExprLatex x ++ ")"
 
 showMathExprLatex' :: MathExpr -> String
 showMathExprLatex' (Plus xs) = "(" ++ showMathExprLatex (Plus xs) ++ ")"
-showMathExprLatex' x = showMathExprLatex x
+showMathExprLatex' x         = showMathExprLatex x
 
 showMathExprLatexArg :: [MathExpr] -> String -> String
 showMathExprLatexArg [] _ = ""
@@ -145,13 +145,13 @@ showMathExprLatexArg lvs s = showMathExprLatex (head lvs) ++ s ++ showMathExprLa
 
 showMathExprLatexSuper :: MathIndex -> String
 showMathExprLatexSuper (Super (Atom "#")) = "\\#"
-showMathExprLatexSuper (Super x) = showMathExprLatex x
-showMathExprLatexSuper (Sub x) = "\\;"
+showMathExprLatexSuper (Super x)          = showMathExprLatex x
+showMathExprLatexSuper (Sub x)            = "\\;"
 
 showMathExprLatexSub :: MathIndex -> String
 showMathExprLatexSub (Sub (Atom "#")) = "\\#"
-showMathExprLatexSub (Sub x) = showMathExprLatex x
-showMathExprLatexSub (Super x) = "\\;"
+showMathExprLatexSub (Sub x)          = showMathExprLatex x
+showMathExprLatexSub (Super x)        = "\\;"
 
 showMathExprLatexScript :: [MathIndex] -> String
 showMathExprLatexScript [] = ""
@@ -176,13 +176,13 @@ symbol :: Parser Char
 symbol = oneOf "!$%&*+-/:<=>?@#"
 
 parseAtom :: Parser MathExpr
-parseAtom = do 
+parseAtom = do
     first <- letter <|> symbol <|> digit
     rest <- many (letter <|> digit <|> symbol)
     let atom = first : rest
     option (Atom atom) $ do is <- many1 (char '|' >> many digit)
                             return $ Partial atom is
-  
+
 parseNegativeAtom :: Parser MathExpr
 parseNegativeAtom = do
     char '-'

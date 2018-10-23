@@ -1,4 +1,4 @@
-{-# Language FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 {- |
 Module      : Language.Egison.Primitives
@@ -10,35 +10,35 @@ This module provides primitive functions in Egison.
 
 module Language.Egison.Primitives (primitiveEnv, primitiveEnvNoIO) where
 
-import Control.Arrow
-import Control.Monad.Except
-import Control.Monad.Trans.Maybe
-import Control.Applicative ((<$>), (<*>), (*>), (<*), pure)
+import           Control.Applicative         (pure, (*>), (<$>), (<*), (<*>))
+import           Control.Arrow
+import           Control.Monad.Except
+import           Control.Monad.Trans.Maybe
 
-import Data.IORef
-import Data.Ratio
-import Data.Foldable (toList)
-import Text.Regex.TDFA
+import           Data.Foldable               (toList)
+import           Data.IORef
+import           Data.Ratio
+import           Text.Regex.TDFA
 
-import System.IO
-import System.Random
-import System.Process
+import           System.IO
+import           System.Process
+import           System.Random
 
-import qualified Data.Sequence as Sq
-import qualified Data.Vector as V
+import qualified Data.Sequence               as Sq
+import qualified Data.Vector                 as V
 
-import Data.Char (ord, chr)
-import qualified Data.Text as T
-import Data.Text (Text)
-import qualified Data.Text.IO as T
+import           Data.Char                   (chr, ord)
+import           Data.Text                   (Text)
+import qualified Data.Text                   as T
+import qualified Data.Text.IO                as T
 
  {--  -- for 'egison-sqlite'
 import qualified Database.SQLite3 as SQLite
  --}  -- for 'egison-sqlite'
 
-import Language.Egison.Expressions
-import Language.Egison.Parser
-import Language.Egison.Core
+import           Language.Egison.Core
+import           Language.Egison.Expressions
+import           Language.Egison.Parser
 
 primitiveEnv :: IO Env
 primitiveEnv = do
@@ -62,7 +62,7 @@ noArg f args = do
     args' <- tupleToList args
     case args' of
       [] -> Value <$> f
-      _ -> throwError $ ArgumentsNumPrimitive 0 $ length args'
+      _  -> throwError $ ArgumentsNumPrimitive 0 $ length args'
 
 {-# INLINE oneArg #-}
 oneArg :: (EgisonValue -> EgisonM EgisonValue) -> PrimitiveFunc
@@ -84,7 +84,7 @@ oneArg' f arg = do
 twoArgs :: (EgisonValue -> EgisonValue -> EgisonM EgisonValue) -> PrimitiveFunc
 twoArgs f args = do
   args' <- tupleToList args
-  case args' of 
+  case args' of
     [TensorData t1@(Tensor _ _ _), TensorData t2@(Tensor _ _ _)] -> Value <$> (tProduct f t1 t2 >>= fromTensor)
     [TensorData(Tensor ns ds js), val] -> do
       ds' <- V.mapM (\d -> f d val) ds
@@ -99,17 +99,17 @@ twoArgs f args = do
 twoArgs' :: (EgisonValue -> EgisonValue -> EgisonM EgisonValue) -> PrimitiveFunc
 twoArgs' f args = do
   args' <- tupleToList args
-  case args' of 
+  case args' of
     [val, val'] -> Value <$> f val val'
-    _ -> throwError $ ArgumentsNumPrimitive 2 $ length args'
+    _           -> throwError $ ArgumentsNumPrimitive 2 $ length args'
 
 {-# INLINE threeArgs' #-}
 threeArgs' :: (EgisonValue -> EgisonValue -> EgisonValue -> EgisonM EgisonValue) -> PrimitiveFunc
 threeArgs' f args = do
   args' <- tupleToList args
-  case args' of 
+  case args' of
     [val, val', val''] -> Value <$> f val val' val''
-    _ -> throwError $ ArgumentsNumPrimitive 3 $ length args'
+    _                  -> throwError $ ArgumentsNumPrimitive 3 $ length args'
 
 --
 -- Constants
@@ -145,20 +145,20 @@ primitives = [ ("b.+", plus)
              -- , ("remainder", integerBinaryOp rem)
              -- , ("b.abs", rationalUnaryOp abs)
              -- , ("b.neg", rationalUnaryOp negate)
-               
+
              , ("eq?",  eq)
              , ("lt?",  lt)
              -- , ("lte?", lte)
              -- , ("gt?",  gt)
              -- , ("gte?", gte)
-               
+
              -- , ("round",    floatToIntegerOp round)
              -- , ("floor",    floatToIntegerOp floor)
              -- , ("ceiling",  floatToIntegerOp ceiling)
              -- , ("truncate", truncate')
              -- , ("real-part", realPart)
              -- , ("imaginary-part", imaginaryPart)
-             --  
+             --
              -- , ("b.sqrt", floatUnaryOp sqrt)
              -- , ("b.sqrt'", floatUnaryOp sqrt)
              -- , ("b.exp", floatUnaryOp exp)
@@ -199,7 +199,7 @@ primitives = [ ("b.+", plus)
              -- , ("add-superscript", addSuperscript)
              --
              -- , ("read-process", readProcess')
-             --  
+             --
              -- , ("read", read')
              -- , ("read-tsv", readTSV)
              -- , ("show", show')
@@ -231,7 +231,7 @@ rationalUnaryOp op = oneArg $ \val -> do
   r <- fromEgison val
   let r' =  op r
   return $ toEgison r'
-  
+
 rationalBinaryOp :: (Rational -> Rational -> Rational) -> PrimitiveFunc
 rationalBinaryOp op = twoArgs $ \val val' -> do
   r <- fromEgison val :: EgisonM Rational
@@ -358,7 +358,7 @@ lt = twoArgs $ \val val' -> scalarBinaryPred' val val'
   scalarBinaryPred' (ScalarData _) val           = throwError $ TypeMismatch "number" (Value val)
   scalarBinaryPred' (Float _ _)  val           = throwError $ TypeMismatch "float" (Value val)
   scalarBinaryPred' val          _             = throwError $ TypeMismatch "number" (Value val)
-  
+
 lte :: PrimitiveFunc
 lte = twoArgs $ \val val' -> scalarBinaryPred' val val'
  where
@@ -370,7 +370,7 @@ lte = twoArgs $ \val val' -> scalarBinaryPred' val val'
   scalarBinaryPred' (ScalarData _) val           = throwError $ TypeMismatch "number" (Value val)
   scalarBinaryPred' (Float _ _)  val           = throwError $ TypeMismatch "float" (Value val)
   scalarBinaryPred' val          _             = throwError $ TypeMismatch "number" (Value val)
-  
+
 gt :: PrimitiveFunc
 gt = twoArgs $ \val val' -> scalarBinaryPred' val val'
  where
@@ -382,7 +382,7 @@ gt = twoArgs $ \val val' -> scalarBinaryPred' val val'
   scalarBinaryPred' (ScalarData _) val           = throwError $ TypeMismatch "number" (Value val)
   scalarBinaryPred' (Float _ _)  val           = throwError $ TypeMismatch "float" (Value val)
   scalarBinaryPred' val          _             = throwError $ TypeMismatch "number" (Value val)
-  
+
 gte :: PrimitiveFunc
 gte = twoArgs $ \val val' -> scalarBinaryPred' val val'
  where
@@ -394,7 +394,7 @@ gte = twoArgs $ \val val' -> scalarBinaryPred' val val'
   scalarBinaryPred' (ScalarData _) val           = throwError $ TypeMismatch "number" (Value val)
   scalarBinaryPred' (Float _ _)    val           = throwError $ TypeMismatch "float" (Value val)
   scalarBinaryPred' val            _             = throwError $ TypeMismatch "number" (Value val)
-  
+
 truncate' :: PrimitiveFunc
 truncate' = oneArg $ \val -> numberUnaryOp' val
  where
@@ -407,13 +407,13 @@ realPart :: PrimitiveFunc
 realPart =  oneArg realPart'
  where
   realPart' (Float x y) = return $ Float x 0
-  realPart' val = throwError $ TypeMismatch "float" (Value val)
+  realPart' val         = throwError $ TypeMismatch "float" (Value val)
 
 imaginaryPart :: PrimitiveFunc
 imaginaryPart =  oneArg imaginaryPart'
  where
   imaginaryPart' (Float _ y) = return $ Float y 0
-  imaginaryPart' val = throwError $ TypeMismatch "float" (Value val)
+  imaginaryPart' val         = throwError $ TypeMismatch "float" (Value val)
 
 --
 -- Tensor
@@ -524,7 +524,7 @@ regexStringCaptureGroup :: PrimitiveFunc
 regexStringCaptureGroup = twoArgs $ \pat src -> case (pat, src) of
                                                   (String patStr, String srcStr) -> do
                                                     let ret = (T.unpack srcStr =~ T.unpack patStr) :: [[String]]
-                                                    case ret of 
+                                                    case ret of
                                                       [] -> return . Collection . Sq.fromList $ []
                                                       ((x:xs):_) -> do let (a, c) = T.breakOn (T.pack x) srcStr
                                                                        return . Collection . Sq.fromList $ [Tuple [String a, Collection (Sq.fromList (map (String . T.pack) xs)), String (T.drop (length x) c)]]
@@ -579,7 +579,7 @@ readTSV :: PrimitiveFunc
 readTSV= oneArg' $ \val -> do rets <- fromEgison val >>= readExprs . T.unpack >>= mapM (evalExprDeep nullEnv)
                               case rets of
                                 [ret] -> return ret
-                                _ -> return (Tuple rets)
+                                _     -> return (Tuple rets)
 
 show' :: PrimitiveFunc
 show'= oneArg' $ \val -> return $ toEgison $ T.pack $ show val
@@ -641,18 +641,18 @@ ioPrimitives = [
                , ("read-line", readLine)
                , ("write-char", writeChar)
                , ("write", writeString)
-                 
+
                , ("read-char-from-port", readCharFromPort)
                , ("read-line-from-port", readLineFromPort)
                , ("write-char-to-port", writeCharToPort)
                , ("write-to-port", writeStringToPort)
-                 
+
                , ("eof?", isEOFStdin)
                , ("flush", flushStdout)
                , ("eof-port?", isEOFPort)
                , ("flush-port", flushPort)
                , ("read-file", readFile')
-                 
+
                , ("rand", randRange)
 --               , ("sqlite", sqlite)
                ]
@@ -692,7 +692,7 @@ writeString :: PrimitiveFunc
 writeString = oneArg' $ \val -> do
   s <- fromEgison val
   return $ makeIO' $ liftIO $ T.putStr s
-  
+
 writeStringToPort :: PrimitiveFunc
 writeStringToPort = twoArgs' $ \val val' -> do
   port <- fromEgison val
@@ -730,7 +730,7 @@ readFile' =  oneArg' $ \val -> do
   filename <- fromEgison val
   s <- liftIO $ T.readFile $ T.unpack filename
   return $ makeIO $ return $ toEgison s
-  
+
 isEOFStdin :: PrimitiveFunc
 isEOFStdin = noArg $ return $ makeIO $ liftIO $ liftM Bool isEOF
 

@@ -12,9 +12,11 @@ module Language.Egison.ImplConv(
   , applyImplConv
   )where
 
+import           Control.Monad.Reader        (Reader, ask, local, runReader)
+import           Language.Egison.Expressions (Env, Expr (..), TopExpr (..),
+                                              Type (..), deleteEnvType,
+                                              refEnvAbsImplConv, refEnvImplConv)
 import qualified Language.Egison.Expressions as EE
-import Language.Egison.Expressions (Type(..), Expr(..), TopExpr(..), Env, refEnvImplConv, refEnvAbsImplConv, deleteEnvType)
-import Control.Monad.Reader (Reader, ask, local, runReader)
 
 innersToExprs :: [EE.InnerExpr] -> [EE.Expr]
 innersToExprs [] = []
@@ -26,7 +28,7 @@ innersToExprs ((EE.SubCollectionExpr (EE.CollectionExpr is)):rest) =
 implConvTopExpr :: Env -> TopExpr -> [Expr]
 implConvTopExpr env exp = case exp of
   Test e -> applyImplConv env e
-  _ -> []
+  _      -> []
 
 applyImplConv :: Env -> Expr -> [Expr]
 applyImplConv env exp = runReader (applyImplConv' exp) env
@@ -56,7 +58,7 @@ applyImplConv' (LambdaExpr args body) = do
     body1 <- local (\e -> deleteEnvType args1 e) $ applyImplConv' body
     return $ map (\x -> LambdaExpr args x) body1
       where f (EE.TensorArg s) = EE.Var [s]
-            f _ = EE.Var []
+            f _                = EE.Var []
 applyImplConv' (ApplyExpr f e) = do
   f1 <- applyImplConv' f
   e1 <- applyImplConv' e

@@ -1,4 +1,5 @@
-{-# Language TupleSections, ViewPatterns #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ViewPatterns  #-}
 
 {- |
 Module      : Language.Egison.Core
@@ -37,38 +38,38 @@ module Language.Egison.Core
     , packStringValue
     ) where
 
-import Prelude hiding (mapM, mappend)
+import           Prelude                     hiding (mapM, mappend)
 
-import Control.Arrow
-import Control.Applicative
-import Control.Monad.Except hiding (mapM)
-import Control.Monad.State hiding (mapM, state)
-import Control.Monad.Trans.Maybe
+import           Control.Applicative
+import           Control.Arrow
+import           Control.Monad.Except        hiding (mapM)
+import           Control.Monad.State         hiding (mapM, state)
+import           Control.Monad.Trans.Maybe
 
-import Data.List (partition)
-import Data.Sequence (Seq, ViewL(..), ViewR(..), (><))
-import qualified Data.Sequence as Sq
-import Data.Ratio
-import Data.Foldable (toList)
-import Data.Traversable (mapM)
-import Data.IORef
-import Data.Maybe
+import           Data.Foldable               (toList)
+import           Data.IORef
+import           Data.List                   (partition)
+import           Data.Maybe
+import           Data.Ratio
+import           Data.Sequence               (Seq, ViewL (..), ViewR (..), (><))
+import qualified Data.Sequence               as Sq
+import           Data.Traversable            (mapM)
 
-import qualified Data.HashMap.Lazy as HL
-import Data.Array ((!))
-import qualified Data.Array as Array
-import qualified Data.Vector as V
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap
+import           Data.Array                  ((!))
+import qualified Data.Array                  as Array
+import qualified Data.HashMap.Lazy           as HL
+import           Data.HashMap.Strict         (HashMap)
+import qualified Data.HashMap.Strict         as HashMap
+import qualified Data.Vector                 as V
 
-import Data.Text (Text)
-import qualified Data.Text as T
+import           Data.Text                   (Text)
+import qualified Data.Text                   as T
 
-import Language.Egison.Expressions
-import Language.Egison.Parser
-import Language.Egison.Types
-import Data.Char (ord, chr)
-import Debug.Trace
+import           Data.Char                   (chr, ord)
+import           Debug.Trace
+import           Language.Egison.Expressions
+import           Language.Egison.Parser
+import           Language.Egison.Types
 
 --
 -- Evaluator
@@ -87,19 +88,19 @@ expandLoad (e:rest) = do
   return (e:es)
 
 isExecute (Execute _) = True
-isExecute _ = False
+isExecute _           = False
 
 isDefine (Define _ _) = True
-isDefine _ = False
+isDefine _            = False
 
 isTest (Test _) = True
-isTest _ = False
+isTest _        = False
 
 isLoad (Load _) = True
-isLoad _ = False
+isLoad _        = False
 
 isLoadFile (LoadFile _) = True
-isLoadFile _ = False
+isLoadFile _            = False
 
 evalTopExprs :: Env -> [TopExpr] -> EgisonM (Maybe String, Env)
 evalTopExprs env exprs = do
@@ -127,9 +128,9 @@ evalTopExprsWithoutLoad env (t:rest) = do
   return (f (o1,o2), e2)
     where
       f (Nothing, Nothing) = Nothing
-      f (Nothing, a) = a
-      f (a, Nothing) = a
-      f (Just a,Just b) = Just $ a ++ "\n" ++ b
+      f (Nothing, a)       = a
+      f (a, Nothing)       = a
+      f (Just a,Just b)    = Just $ a ++ "\n" ++ b
 
 -- The return value is (output string, environment)
 evalTopExpr :: Env -> TopExpr -> EgisonM (Maybe String, Env)
@@ -146,7 +147,7 @@ evalTopExpr env (Define name expr) =
         where typecheck = checkTopExpr env (Test (LetRecExpr [([var],expr)] expr))
               var = stringToVar $ show name
 
-evalTopExpr env (Test expr) = 
+evalTopExpr env (Test expr) =
   case typecheck of
     Right ty -> do
       val <- evalExprDeep env expr
@@ -158,7 +159,7 @@ evalTopExpr env (Execute expr) = do
   io <- evalExpr env expr
   case io of
     Value (IOFunc m) -> m >> return (Nothing, env)
-    _ -> throwError $ TypeMismatch "io" io
+    _                -> throwError $ TypeMismatch "io" io
 
 evalTopExpr env (ImplicitConversion t1 t2 e) = return (Nothing, extendEnvImplConv [(t1,t2,e)] env)
 evalTopExpr env (AbsoluteImplicitConversion t1 t2 e) = return (Nothing, extendEnvAbsImplConv [(t1,t2,e)] env)
@@ -173,7 +174,7 @@ evalTopExpr env (DefineADT adtname cts) = do
           lower (c:r) = (chr (ord c - (ord 'A' - ord 'a'))) : r
           ttop (TypeTuple ts) = TypeTuple $ map TypePattern ts
 
-evalTopExpr env (PrintTypeOf exp) = 
+evalTopExpr env (PrintTypeOf exp) =
   case typecheck of
     Right ty -> return (Just $ show exp ++ " :: " ++ show ty, env)
     Left err -> return (Just err, env)
@@ -196,7 +197,7 @@ evalExpr env (QuoteFunctionExpr expr) = do
   whnf <- evalExpr env expr
   case whnf of
     Value val -> return . Value $ QuotedFunc val
-    _ -> throwError $ TypeMismatch "value in quote-function" $ whnf
+    _         -> throwError $ TypeMismatch "value in quote-function" $ whnf
 
 evalExpr env (VarExpr name) = do
   x <- refVar' env name >>= evalRef
@@ -214,7 +215,7 @@ evalExpr env (PartialVarExpr n) = evalExpr env (VarExpr $ stringToVar ("::" ++ s
 
 evalExpr _ (InductiveDataExpr name []) = return . Value $ InductiveData name []
 evalExpr env (InductiveDataExpr name exprs) =
-  Intermediate . IInductiveData name <$> mapM (newObjectRef env) exprs 
+  Intermediate . IInductiveData name <$> mapM (newObjectRef env) exprs
 
 evalExpr _ (TupleExpr []) = return . Value $ Tuple []
 evalExpr env (TupleExpr [expr]) = evalExpr env expr
@@ -230,7 +231,7 @@ evalExpr env (CollectionExpr inners) = do
   fromInnerExpr :: InnerExpr -> EgisonM Inner
   fromInnerExpr (ElementExpr expr) = IElement <$> newObjectRef env expr
   fromInnerExpr (SubCollectionExpr expr) = ISubCollection <$> newObjectRef env expr
- 
+
 evalExpr env (ArrayExpr exprs) = do
   refs' <- mapM (newObjectRef env) exprs
   return . Intermediate . IArray $ Array.listArray (1, toInteger (length exprs)) refs'
@@ -293,14 +294,14 @@ evalExpr env (IndexedExpr bool expr indices) = do
                 let mObjRef = refVar env ((stringToVar . show) (VarWithIndexType (show var) (map f indices)))
                 case mObjRef of
                   (Just objRef) -> evalRef objRef
-                  Nothing -> evalExpr env expr
+                  Nothing       -> evalExpr env expr
               _ -> evalExpr env expr
   js <- mapM (\i -> case i of
                       Superscript n -> evalExprDeep env n >>= return . Superscript
                       Subscript n -> evalExprDeep env n >>= return . Subscript
                       SupSubscript n -> evalExprDeep env n >>= return . SupSubscript
               ) indices
-  
+
   ret <- case tensor of
       (Value (ScalarData (Div (Plus [(Term 1 [(Symbol id name [], 1)])]) (Plus [(Term 1 [])])))) -> do
         js2 <- mapM (\i -> case i of
@@ -324,15 +325,15 @@ evalExpr env (IndexedExpr bool expr indices) = do
                              SupSubscript n -> evalExprDeep env n >>= extractScalar >>= return . SupSubscript
                     ) indices
         refArray tensor (map (\j -> case j of
-                                      Superscript k -> ScalarData k
-                                      Subscript k -> ScalarData k
+                                      Superscript k  -> ScalarData k
+                                      Subscript k    -> ScalarData k
                                       SupSubscript k -> ScalarData k
                               ) js2)
   return ret
  where
   f :: Index a -> Index ()
-  f (Superscript _) = Superscript ()
-  f (Subscript _) = Subscript ()
+  f (Superscript _)  = Superscript ()
+  f (Subscript _)    = Subscript ()
   f (SupSubscript _) = SupSubscript ()
 
 evalExpr env (SubrefsExpr bool expr jsExpr) = do
@@ -342,7 +343,7 @@ evalExpr env (SubrefsExpr bool expr jsExpr) = do
                 let mObjRef = refVar env ((stringToVar . show) (VarWithIndexType (show var) (take (length js) (repeat (Subscript ())))))
                 case mObjRef of
                   (Just objRef) -> evalRef objRef
-                  Nothing -> evalExpr env expr
+                  Nothing       -> evalExpr env expr
               _ -> evalExpr env expr
   ret <- case tensor of
       (Value (ScalarData _)) -> do
@@ -357,8 +358,8 @@ evalExpr env (SubrefsExpr bool expr jsExpr) = do
   return ret
  where
   f :: Index a -> Index ()
-  f (Superscript _) = Superscript ()
-  f (Subscript _) = Subscript ()
+  f (Superscript _)  = Superscript ()
+  f (Subscript _)    = Subscript ()
   f (SupSubscript _) = SupSubscript ()
 
 evalExpr env (SuprefsExpr bool expr jsExpr) = do
@@ -368,7 +369,7 @@ evalExpr env (SuprefsExpr bool expr jsExpr) = do
                 let mObjRef = refVar env ((stringToVar . show) (VarWithIndexType (show var) (take (length js) (repeat (Superscript ())))))
                 case mObjRef of
                   (Just objRef) -> evalRef objRef
-                  Nothing -> evalExpr env expr
+                  Nothing       -> evalExpr env expr
               _ -> evalExpr env expr
   ret <- case tensor of
       (Value (ScalarData _)) -> do
@@ -383,8 +384,8 @@ evalExpr env (SuprefsExpr bool expr jsExpr) = do
   return ret
  where
   f :: Index a -> Index ()
-  f (Superscript _) = Superscript ()
-  f (Subscript _) = Subscript ()
+  f (Superscript _)  = Superscript ()
+  f (Subscript _)    = Subscript ()
   f (SupSubscript _) = SupSubscript ()
 
 evalExpr env (UserrefsExpr bool expr jsExpr) = do
@@ -431,7 +432,7 @@ evalExpr env (LetExpr bindings expr) =
 
 evalExpr env (LetRecExpr bindings expr) =
   let bindings' = evalState (concat <$> mapM extractBindings bindings) 0
-  in recursiveBind env bindings' >>= flip evalExpr expr 
+  in recursiveBind env bindings' >>= flip evalExpr expr
  where
   extractBindings :: BindingExpr -> State Int [(Var, Expr)]
   extractBindings ([name], expr) = return [(name, expr)]
@@ -504,7 +505,7 @@ evalExpr env (WithSymbolsExpr vars expr) = do
     (Tensor s ys _) <- tTranspose (js ++ ds) (Tensor s xs is)
     return (Value (TensorData (Tensor s ys js)))
   removeDFscripts _ whnf = return whnf
-    
+
 
 evalExpr env (DoExpr bindings expr) = return $ Value $ IOFunc $ do
   let body = foldr genLet (ApplyExpr expr $ TupleExpr [VarExpr $ stringToVar "#1"]) bindings
@@ -547,7 +548,7 @@ evalExpr env (MatchExpr target matcher clauses) = do
             result <- patternMatch env pattern target matcher
             case result of
               MCons bindings _ -> evalExpr (extendEnv env bindings) expr
-              MNil -> cont
+              MNil             -> cont
       foldr tryMatchClause (throwError $ Default "failed pattern match") clauses
 
 evalExpr env (SeqExpr expr1 expr2) = do
@@ -662,14 +663,14 @@ evalExpr env (MemoizeExpr memoizeFrame expr) = do
 
 evalExpr env (MatcherBFSExpr info) = return $ Value $ UserMatcher env BFSMode info
 evalExpr env (MatcherDFSExpr info) = return $ Value $ UserMatcher env DFSMode info
- 
+
 evalExpr env (GenerateArrayExpr fnExpr (fstExpr, lstExpr)) = do
   fN <- (evalExpr env fstExpr >>= fromWHNF) :: EgisonM Integer
   eN <- (evalExpr env lstExpr >>= fromWHNF) :: EgisonM Integer
   xs <- mapM (\n -> (newObjectRef env (ApplyExpr fnExpr (IntegerExpr n)))) [fN..eN]
   return $ Intermediate $ IArray $ Array.listArray (fN, eN) xs
 
-evalExpr env (ArrayBoundsExpr expr) = 
+evalExpr env (ArrayBoundsExpr expr) =
   evalExpr env expr >>= arrayBounds
 
 evalExpr env (GenerateTensorExpr fnExpr sizeExpr) = do
@@ -760,7 +761,7 @@ evalExpr env (PmapExpr fnExpr cExpr) = do
  where
   applyFunc' :: Env -> WHNFData -> EgisonValue -> EgisonM EgisonValue
   applyFunc' env fn x = applyFunc env fn (Value x) >>= evalWHNF
-  
+
 
 evalExpr _ SomethingExpr = return $ Value Something
 evalExpr _ UndefinedExpr = return $ Value Undefined
@@ -887,7 +888,7 @@ applyFunc _ (Value (PrimitiveFunc _ func)) arg = func arg
 applyFunc _ (Value (IOFunc m)) arg = do
   case arg of
      Value World -> m
-     _ -> throwError $ TypeMismatch "world" arg
+     _           -> throwError $ TypeMismatch "world" arg
 applyFunc _ (Value (QuotedFunc fn)) arg = do
   args <- tupleToList arg
   mExprs <- mapM extractScalar args
@@ -899,7 +900,7 @@ applyFunc _ (Value fn@(ScalarData (Div (Plus [(Term 1 [(Symbol _ _ _, 1)])]) (Pl
 applyFunc _ whnf _ = throwError $ TypeMismatch "function" whnf
 
 refArray :: WHNFData -> [EgisonValue] -> EgisonM WHNFData
-refArray val [] = return val 
+refArray val [] = return val
 refArray (Value (Array array)) (index:indices) = do
   if isInteger index
     then do i <- (liftM fromInteger . fromEgison) index
@@ -933,32 +934,32 @@ refArray (Value (IntHash hash)) (index:indices) = do
   key <- fromEgison index
   case HL.lookup key hash of
     Just val -> refArray (Value val) indices
-    Nothing -> return $ Value Undefined
+    Nothing  -> return $ Value Undefined
 refArray (Intermediate (IIntHash hash)) (index:indices) = do
   key <- fromEgison index
   case HL.lookup key hash of
     Just ref -> evalRef ref >>= flip refArray indices
-    Nothing -> return $ Value Undefined
+    Nothing  -> return $ Value Undefined
 refArray (Value (CharHash hash)) (index:indices) = do
   key <- fromEgison index
   case HL.lookup key hash of
     Just val -> refArray (Value val) indices
-    Nothing -> return $ Value Undefined
+    Nothing  -> return $ Value Undefined
 refArray (Intermediate (ICharHash hash)) (index:indices) = do
   key <- fromEgison index
   case HL.lookup key hash of
     Just ref -> evalRef ref >>= flip refArray indices
-    Nothing -> return $ Value Undefined
+    Nothing  -> return $ Value Undefined
 refArray (Value (StrHash hash)) (index:indices) = do
   key <- fromEgison index
   case HL.lookup key hash of
     Just val -> refArray (Value val) indices
-    Nothing -> return $ Value Undefined
+    Nothing  -> return $ Value Undefined
 refArray (Intermediate (IStrHash hash)) (index:indices) = do
   key <- fromEgison index
   case HL.lookup key hash of
     Just ref -> evalRef ref >>= flip refArray indices
-    Nothing -> return $ Value Undefined
+    Nothing  -> return $ Value Undefined
 refArray val _ = throwError $ TypeMismatch "array or hash" val
 
 arrayBounds :: WHNFData -> EgisonM WHNFData
@@ -1032,7 +1033,7 @@ recursiveRebind env (name, expr) = do
 -- Pattern Match
 --
 
-patternMatch :: Env -> EgisonPattern -> WHNFData -> Matcher -> EgisonM (MList EgisonM Match) 
+patternMatch :: Env -> EgisonPattern -> WHNFData -> Matcher -> EgisonM (MList EgisonM Match)
 patternMatch env pattern target matcher = processMStates [msingleton $ MState env [] [] [MAtom pattern target matcher]]
 
 processMStates :: [MList EgisonM MatchingState] -> EgisonM (MList EgisonM Match)
@@ -1065,13 +1066,13 @@ extractMatches = extractMatches' ([], [])
     states' <- states
     extractMatches' (xs ++ [bindings], ys ++ [states']) rest
   extractMatches' (xs, ys) (stream:rest) = extractMatches' (xs, ys ++ [stream]) rest
-          
+
 processMStatesDFS :: MList EgisonM MatchingState -> EgisonM [(MList EgisonM MatchingState)]
 processMStatesDFS (MCons state stream) = do
   stream' <- processMState state
   newStream <- mappend stream' stream
   return [newStream]
-  
+
 processMStatesBFS :: MList EgisonM MatchingState -> EgisonM [(MList EgisonM MatchingState)]
 processMStatesBFS (MCons state stream) = do
   newStream <- processMState state
@@ -1080,7 +1081,7 @@ processMStatesBFS (MCons state stream) = do
 
 topMAtom :: MatchingState -> MatchingTree
 topMAtom (MState _ _ _ (mAtom@(MAtom _ _ _):_)) = mAtom
-topMAtom (MState _ _ _ ((MNode _ mstate):_)) = topMAtom mstate
+topMAtom (MState _ _ _ ((MNode _ mstate):_))    = topMAtom mstate
 
 getMatcher :: MatchingTree -> Matcher
 getMatcher (MAtom _ _ matcher) = matcher
@@ -1093,13 +1094,13 @@ processMState state = do
       result <- processMStates [msingleton state1]
       case result of
         MNil -> return $ msingleton state2
-        _ -> return MNil
+        _    -> return MNil
     else processMState' state
  where
   isNotPat :: MatchingState -> Bool
   isNotPat state = case topMAtom state of
                      MAtom (NotPat _) _ _ -> True
-                     _ -> False
+                     _                    -> False
   splitMState :: MatchingState -> (MatchingState, MatchingState)
   splitMState (MState env loops bindings ((MAtom (NotPat pattern) target matcher) : trees)) =
     (MState env loops bindings [MAtom pattern target matcher], MState env loops bindings trees)
@@ -1173,7 +1174,7 @@ processMState' (MState env loops bindings ((MAtom pattern target matcher):trees)
       startNumRef <- newEvaluatedObjectRef $ Value $ toEgison (startNum - 1)
       ends' <- evalExpr env' ends
       if isPrimitiveValue ends'
-        then do 
+        then do
           endsRef <- newEvaluatedObjectRef ends'
           inners <- liftIO $ newIORef $ Sq.fromList [IElement endsRef]
           endsRef' <- liftIO $ newIORef (WHNF (Intermediate (ICollection inners)))
@@ -1216,7 +1217,7 @@ processMState' (MState env loops bindings ((MAtom pattern target matcher):trees)
             targets <- evalRef ref >>= fromTupleWHNF
             let trees' = zipWith3 MAtom patterns targets matchers ++ trees
             return $ MState env loops bindings trees'
-            
+
         Tuple matchers -> do
           case pattern of
             ValuePat _ -> return $ msingleton $ MState env loops bindings ((MAtom pattern target Something):trees)
@@ -1270,7 +1271,7 @@ processMState' (MState env loops bindings ((MAtom pattern target matcher):trees)
                 subst k nv ((k', v'):xs) | k == k'   = (k', nv):(subst k nv xs)
                                          | otherwise = (k', v'):(subst k nv xs)
                 subst _ _ [] = []
-            IndexedPat pattern indices -> throwError $ Default ("invalid indexed-pattern: " ++ show pattern) 
+            IndexedPat pattern indices -> throwError $ Default ("invalid indexed-pattern: " ++ show pattern)
             TuplePat patterns -> do
               targets <- fromTupleWHNF target
               if not (length patterns == length targets) then throwError $ ArgumentsNum (length patterns) (length targets) else return ()
@@ -1435,7 +1436,7 @@ evalMatcherWHNF whnf = throwError $ TypeMismatch "matcher" whnf
 -- Util
 --
 toListPat :: [EgisonPattern] -> EgisonPattern
-toListPat [] = InductivePat "nil" []
+toListPat []         = InductivePat "nil" []
 toListPat (pat:pats) = InductivePat "cons" [pat, (toListPat pats)]
 
 fromTuple :: WHNFData -> EgisonM [ObjectRef]
@@ -1445,12 +1446,12 @@ fromTuple whnf = return <$> newEvaluatedObjectRef whnf
 
 fromTupleWHNF :: WHNFData -> EgisonM [WHNFData]
 fromTupleWHNF (Intermediate (ITuple refs)) = mapM evalRef refs
-fromTupleWHNF (Value (Tuple vals)) = return $ map Value vals
-fromTupleWHNF whnf = return [whnf]
+fromTupleWHNF (Value (Tuple vals))         = return $ map Value vals
+fromTupleWHNF whnf                         = return [whnf]
 
 fromTupleValue :: EgisonValue -> [EgisonValue]
 fromTupleValue (Tuple vals) = vals
-fromTupleValue val = [val]
+fromTupleValue val          = [val]
 
 fromCollection :: WHNFData -> EgisonM (MList EgisonM ObjectRef)
 fromCollection (Value (Collection vals)) =
@@ -1472,7 +1473,7 @@ tupleToList whnf = do
   return $ tupleToList' val
  where
   tupleToList' (Tuple vals) = vals
-  tupleToList' val = [val]
+  tupleToList' val          = [val]
 
 collectionToList :: WHNFData -> EgisonM [EgisonValue]
 collectionToList whnf = do
@@ -1484,9 +1485,9 @@ collectionToList whnf = do
   collectionToList' val = throwError $ TypeMismatch "collection" (Value val)
 
 makeTuple :: [EgisonValue] -> EgisonValue
-makeTuple [] = Tuple []
+makeTuple []  = Tuple []
 makeTuple [x] = x
-makeTuple xs = Tuple xs
+makeTuple xs  = Tuple xs
 
 makeITuple :: [WHNFData] -> EgisonM WHNFData
 makeITuple [] = return $ Intermediate (ITuple [])
@@ -1523,8 +1524,8 @@ extractPrimitiveValue (Value val@(Float _ _)) = return val
 extractPrimitiveValue whnf = throwError $ TypeMismatch "primitive value" whnf
 
 isPrimitiveValue :: WHNFData -> Bool
-isPrimitiveValue (Value (Char _)) = True
-isPrimitiveValue (Value (Bool _)) = True
+isPrimitiveValue (Value (Char _))       = True
+isPrimitiveValue (Value (Bool _))       = True
 isPrimitiveValue (Value (ScalarData _)) = True
-isPrimitiveValue (Value (Float _ _)) = True
-isPrimitiveValue _ = False
+isPrimitiveValue (Value (Float _ _))    = True
+isPrimitiveValue _                      = False

@@ -8,7 +8,7 @@ Licence     : MIT
 This module provide Egison parser.
 -}
 
-module Language.Egison.Parser 
+module Language.Egison.Parser
        (
        -- * Parse a string
          readTopExprs
@@ -24,32 +24,32 @@ module Language.Egison.Parser
        , loadFile
        ) where
 
-import Prelude hiding (mapM)
-import Control.Monad.Identity hiding (mapM)
-import Control.Monad.Except hiding (mapM)
-import Control.Monad.State hiding (mapM)
-import Control.Applicative ((<$>), (<*>), (*>), (<*), pure)
+import           Control.Applicative         (pure, (*>), (<$>), (<*), (<*>))
+import           Control.Monad.Except        hiding (mapM)
+import           Control.Monad.Identity      hiding (mapM)
+import           Control.Monad.State         hiding (mapM)
+import           Prelude                     hiding (mapM)
 
-import System.Directory (doesFileExist, getHomeDirectory)
+import           System.Directory            (doesFileExist, getHomeDirectory)
 
-import qualified Data.Sequence as Sq
-import Data.Either
-import Data.Char (isLower, isUpper)
-import qualified Data.Set as Set
-import Data.Traversable (mapM)
-import Data.Ratio
-import Data.List.Split (splitOn)
+import           Data.Char                   (isLower, isUpper)
+import           Data.Either
+import           Data.List.Split             (splitOn)
+import           Data.Ratio
+import qualified Data.Sequence               as Sq
+import qualified Data.Set                    as Set
+import           Data.Traversable            (mapM)
 
-import Text.Parsec
-import Text.Parsec.String
-import qualified Text.Parsec.Token as P
+import           Text.Parsec
+import           Text.Parsec.String
+import qualified Text.Parsec.Token           as P
 
-import qualified Data.Text as T
-import Text.Regex.TDFA
+import qualified Data.Text                   as T
+import           Text.Regex.TDFA
 
-import Language.Egison.Expressions
-import Language.Egison.Desugar
-import Paths_egison (getDataFileName)
+import           Language.Egison.Desugar
+import           Language.Egison.Expressions
+import           Paths_egison                (getDataFileName)
 
 readTopExprs :: String -> EgisonM [TopExpr]
 readTopExprs s = either throwError return (parseTopExprs s)
@@ -105,12 +105,12 @@ loadFile file = do
   exprs <- readTopExprs $ shebang input
   concat <$> mapM  recursiveLoad exprs
  where
-  recursiveLoad (Load file) = loadLibraryFile file
+  recursiveLoad (Load file)     = loadLibraryFile file
   recursiveLoad (LoadFile file) = loadFile file
-  recursiveLoad expr = return [expr]
+  recursiveLoad expr            = return [expr]
   shebang :: String -> String
   shebang ('#':'!':cs) = ';':'#':'!':cs
-  shebang cs = cs
+  shebang cs           = cs
 
 --
 -- Parser
@@ -147,14 +147,14 @@ defineExpr = try (parens (keywordDefine >> Define <$> varNameWithIndexType <*> e
                              body <- expr
                              return $ Define (VarWithIndexType name (map f is)) (WithSymbolsExpr (map g is) (TransposeExpr (CollectionExpr (map (ElementExpr . h) is)) body))))
  where
-  f (Superscript _) = Superscript ()
-  f (Subscript _) = Subscript ()
+  f (Superscript _)  = Superscript ()
+  f (Subscript _)    = Subscript ()
   f (SupSubscript _) = SupSubscript ()
-  g (Superscript i) = i
-  g (Subscript i) = i
+  g (Superscript i)  = i
+  g (Subscript i)    = i
   g (SupSubscript i) = i
-  h (Superscript i) = (VarExpr $ stringToVar i)
-  h (Subscript i) = (VarExpr $ stringToVar i)
+  h (Superscript i)  = (VarExpr $ stringToVar i)
+  h (Subscript i)    = (VarExpr $ stringToVar i)
   h (SupSubscript i) = (VarExpr $ stringToVar i)
 
 testExpr :: Parser TopExpr
@@ -178,9 +178,9 @@ absoluteImplicitConversionExpr = keywordAbsImplConv >> AbsoluteImplicitConversio
 defineTypeOfExpr :: Parser TopExpr
 defineTypeOfExpr = keywordDefineTypeOf >> DefineTypeOf <$> varName' <*> parseType
 
-parseType = (try keywordTypeChar >> return TypeChar) 
+parseType = (try keywordTypeChar >> return TypeChar)
             <|> (try keywordTypeString >> return TypeString)
-            <|> (try keywordTypeBool >> return TypeBool) 
+            <|> (try keywordTypeBool >> return TypeBool)
             <|> (try keywordTypeInt >> return TypeInt)
             <|> (try keywordTypeAny >> return TypeStar)
             <|> (parens (try parseTypeMatcher
@@ -236,13 +236,13 @@ expr = P.lexeme lexer (do expr0 <- expr' <|> quoteExpr'
                           option expr1 $ PowerExpr expr1 <$> (try $ char '^' >> expr'))
                             where parseindex :: Parser [Index Expr]
                                   parseindex = many1 (try (do
-                                                               char '_' 
+                                                               char '_'
                                                                e1 <- expr'
                                                                string "..._"
                                                                e2 <- expr'
                                                                return $ MultiSubscript e1 e2)
                                                  <|> try (do
-                                                           char '~' 
+                                                           char '~'
                                                            e1 <- expr'
                                                            string "...~"
                                                            e2 <- expr'
@@ -429,7 +429,7 @@ ppPattern = P.lexeme lexer (ppWildCard
                         <|> ppValuePat
                         <|> ppInductivePat
                         <?> "primitive-pattren-pattern")
-                       
+
 ppWildCard :: Parser PrimitivePatPattern
 ppWildCard = reservedOp "_" *> pure PPWildCard
 
@@ -449,7 +449,7 @@ pdPattern' :: Parser PrimitiveDataPattern
 pdPattern' = reservedOp "_" *> pure PDWildCard
                     <|> (char '$' >> PDPatVar <$> ident)
                     <|> braces ((PDConsPat <$> pdPattern <*> (char '@' *> pdPattern))
-                            <|> (PDSnocPat <$> (char '@' *> pdPattern) <*> pdPattern) 
+                            <|> (PDSnocPat <$> (char '@' *> pdPattern) <*> pdPattern)
                             <|> pure PDEmptyPat)
                     <|> angles (PDInductivePat <$> upperName <*> sepEndBy pdPattern whiteSpace)
                     <|> brackets (PDTuplePat <$> sepEndBy pdPattern whiteSpace)
@@ -517,7 +517,7 @@ binding = brackets $ (,) <$> varNames' <*> expr
 
 varNames :: Parser [String]
 varNames = return <$> varName
-            <|> brackets (sepEndBy varName whiteSpace) 
+            <|> brackets (sepEndBy varName whiteSpace)
 
 varNames' :: Parser [Var]
 varNames' = do
@@ -554,7 +554,7 @@ indexForVar = try (char '~' >> Superscript <$> ident)
 
 argNames :: Parser [Arg]
 argNames = return <$> argName
-            <|> brackets (sepEndBy argName whiteSpace) 
+            <|> brackets (sepEndBy argName whiteSpace)
 
 argName :: Parser Arg
 argName = try (char '$' >> ident >>= return . TensorArg)
@@ -568,10 +568,10 @@ seqExpr :: Parser Expr
 seqExpr = keywordSeq >> SeqExpr <$> expr <*> expr
 
 cApplyExpr :: Parser Expr
-cApplyExpr = (keywordCApply >> CApplyExpr <$> expr <*> expr) 
+cApplyExpr = (keywordCApply >> CApplyExpr <$> expr <*> expr)
 
 applyExpr :: Parser Expr
-applyExpr = (keywordApply >> ApplyExpr <$> expr <*> expr) 
+applyExpr = (keywordApply >> ApplyExpr <$> expr <*> expr)
              <|> applyExpr'
 
 applyExpr' :: Parser Expr
@@ -603,9 +603,9 @@ applyExpr' = do
          <|> char '$' *> (Left <$> option "" index)
   index = (:) <$> satisfy (\c -> '1' <= c && c <= '9') <*> many digit
   annonVars m n = take n $ map ((':':) . show) [m..]
-  f ((Left _), var) = Left var
+  f ((Left _), var)  = Left var
   f ((Right _), var) = Right var
-  g ((Left arg), _) = Left (':':arg)
+  g ((Left arg), _)  = Left (':':arg)
   g ((Right _), var) = Right var
 
 partialExpr :: Parser Expr
@@ -750,10 +750,10 @@ orderedOrPat :: Parser EgisonPattern
 orderedOrPat = reservedOp "|*" >> OrderedOrPat <$> sepEndBy pattern whiteSpace
 
 pApplyPat :: Parser EgisonPattern
-pApplyPat = PApplyPat <$> expr <*> sepEndBy pattern whiteSpace 
+pApplyPat = PApplyPat <$> expr <*> sepEndBy pattern whiteSpace
 
 dApplyPat :: Parser EgisonPattern
-dApplyPat = DApplyPat <$> pattern'' <*> sepEndBy pattern whiteSpace 
+dApplyPat = DApplyPat <$> pattern'' <*> sepEndBy pattern whiteSpace
 
 loopPat :: Parser EgisonPattern
 loopPat = keywordLoop >> LoopPat <$> varName' <*> loopRange <*> pattern <*> option (NotPat WildCard) pattern
@@ -845,7 +845,7 @@ floatLiteral' = sign <*> positiveFloatLiteral
 --
 
 egisonDef :: P.GenLanguageDef String () Identity
-egisonDef = 
+egisonDef =
   P.LanguageDef { P.commentStart       = "#|"
                 , P.commentEnd         = "|#"
                 , P.commentLine        = ";"
@@ -866,7 +866,7 @@ lexer :: P.GenTokenParser String () Identity
 lexer = P.makeTokenParser egisonDef
 
 reservedKeywords :: [String]
-reservedKeywords = 
+reservedKeywords =
   [ "define"
   , "set!"
   , "test"
@@ -941,7 +941,7 @@ reservedKeywords =
 
 
 reservedOperators :: [String]
-reservedOperators = 
+reservedOperators =
   [ "$"
   , ",$"
   , "_"
@@ -1108,7 +1108,7 @@ upperName = P.lexeme lexer $ upperName'
 upperName' :: Parser String
 upperName' = (:) <$> upper <*> option "" ident
  where
-  upper :: Parser Char 
+  upper :: Parser Char
   upper = satisfy isUpper
 
 lowerName :: Parser String
@@ -1117,5 +1117,5 @@ lowerName = P.lexeme lexer $ lowerName'
 lowerName' :: Parser String
 lowerName' = (:) <$> lower <*> option "" ident
  where
-  lower :: Parser Char 
+  lower :: Parser Char
   lower = satisfy isLower
