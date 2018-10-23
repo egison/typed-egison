@@ -212,7 +212,7 @@ import Data.Char (ord)
 -- All TCFun arguments have same type a.
 data Type = TypeChar | TypeString | TypeBool | TypeInt | TypeVar TypeVarIndex | TypeStar |
             TypeFun Type Type | TypeTuple [Type] | TypeCollection Type | TypePattern Type |
-            TypeMatcher Type | TypeMatcherClause Type
+            TypeMatcher Type | TypeMatcherClause Type | TypeADT TypeVarIndex
             deriving (Eq)
 -- if the head of a TypeVarIndex is capital case, 
 -- it is the user defined type name.
@@ -231,6 +231,7 @@ instance Show Type where
   show (TypePattern t) = "(Pattern " ++ show t ++ ")"
   show (TypeMatcher t) = "(Matcher " ++ show t ++ ")"
   show (TypeMatcherClause t) = "(MatcherClause " ++ show t ++ ")"
+  show (TypeADT s) = s
 
 --
 -- Expressions
