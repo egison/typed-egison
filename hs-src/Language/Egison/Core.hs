@@ -179,8 +179,6 @@ evalTopExpr env (PrintTypeOf exp) =
     Left err -> return (Just err, env)
     where typecheck = checkTopExpr env (Test exp)
 
-evalTopExpr env (DisableTypecheckOf v) = return (Nothing, extendEnvDisableTypecheck v env)
-
 evalExpr :: Env -> Expr -> EgisonM WHNFData
 evalExpr _ (CharExpr c) = return . Value $ Char c
 evalExpr _ (StringExpr s) = return $ Value $ toEgison s

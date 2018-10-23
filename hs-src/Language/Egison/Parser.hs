@@ -175,9 +175,6 @@ implicitConversionExpr = keywordImplConv >> ImplicitConversion <$> parseType <*>
 absoluteImplicitConversionExpr :: Parser TopExpr
 absoluteImplicitConversionExpr = keywordAbsImplConv >> AbsoluteImplicitConversion <$> parseType <*> parseType <*> expr
 
-disableTypecheckOf :: Parser TopExpr
-disableTypecheckOf = keywordDisableTypecheckOf >> DisableTypecheckOf <$> varName'
-
 defineTypeOfExpr :: Parser TopExpr
 defineTypeOfExpr = keywordDefineTypeOf >> DefineTypeOf <$> varName' <*> parseType
 
