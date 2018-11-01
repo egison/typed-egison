@@ -10,5 +10,5 @@
 (define $unorderd-pair
  (lambda [$a]
   (matcher {[<pair $ $> [a a]
-   {[<Pair $x $y> {[x y] [y x]}]}]
+   {[<pair $x $y> {[x y] [y x]}]}]
    [$ [something] {[$tgt {tgt}]}]})))

@@ -383,7 +383,7 @@ mcsToSub env ty (ppp,nme,pdmcs) = do
   ty1 <- getNewTypeVar
   (sub2, _, env2, holes) <- pppToSub env (TypePattern ty1) ppp
   (sub3, _) <- exprToSub' env (tupleToMathcerTuple holes) nme
-  typdp <- getNewTypeVar
+  typdp <- getNewTypeVar >>= (return. TypePattern)
   sts <- mapM (pdmcToSub (env ++ env2) (TypeTuple [typdp,TypeCollection holes])) pdmcs
   let sub4 = foldr (++) [] (map fst sts)
   let sub5 = map (\x -> (TypeTuple [typdp,TypeCollection holes], snd x)) sts
@@ -437,7 +437,7 @@ pdpToSub env ty EE.PDWildCard = return ([], TypeStar, env)
 pdpToSub env ty (EE.PDPatVar s) = do
   ty1 <- getNewTypeVar
   let env1 = (EE.Var [s], TypeScheme [] ty1) : env
-  return ([(ty1, ty)], ty1, env1)
+  return ([(TypePattern ty1, ty)], TypePattern ty1, env1)
 
 pdpToSub env ty (EE.PDConsPat pdp1 pdp2) = do
   (sub1, ty1, env1) <- pdpToSub env ty pdp1

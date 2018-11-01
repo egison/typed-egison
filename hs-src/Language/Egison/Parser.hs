@@ -451,7 +451,7 @@ pdPattern' = reservedOp "_" *> pure PDWildCard
                     <|> braces ((PDConsPat <$> pdPattern <*> (char '@' *> pdPattern))
                             <|> (PDSnocPat <$> (char '@' *> pdPattern) <*> pdPattern)
                             <|> pure PDEmptyPat)
-                    <|> angles (PDInductivePat <$> upperName <*> sepEndBy pdPattern whiteSpace)
+                    <|> angles (PDInductivePat <$> lowerName <*> sepEndBy pdPattern whiteSpace)
                     <|> brackets (PDTuplePat <$> sepEndBy pdPattern whiteSpace)
                     <|> PDConstantPat <$> constantExpr
                     <?> "primitive-data-pattern"
