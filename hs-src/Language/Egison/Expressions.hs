@@ -1240,6 +1240,7 @@ instance Show Expr where
       f (ElementExpr e:rest)                           = e:(f rest)
       f ((SubCollectionExpr (CollectionExpr is)):rest) = f is ++ f rest
   show (LambdaExpr as e) = "(lambda [" ++ (intercalate " " (map show as)) ++ "] " ++ show e ++ ")"
+  show SomethingExpr = "something"
 
 
 instance Show EgisonValue where
