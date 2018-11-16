@@ -231,9 +231,9 @@ instance Show Type where
   show TypeInt = "Integer"
   show (TypeVar s) = s
   show TypeStar = "Any"
-  show (TypeFun t1 t2) = "(Fun " ++ show t1 ++ " " ++ show t2 ++ ")"
-  show (TypeTuple ts) = "(Tuple" ++ (foldl (++) "" (map (\x -> " " ++ show x) ts)) ++ ")"
-  show (TypeCollection t) = "(Collection " ++ show t ++ ")"
+  show (TypeFun t1 t2) = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
+  show (TypeTuple ts) = "[" ++ intercalate " " (map show ts) ++ "]"
+  show (TypeCollection t) = "{" ++ show t ++ "}"
   show (TypePattern t) = "(Pattern " ++ show t ++ ")"
   show (TypeMatcher t) = "(Matcher " ++ show t ++ ")"
   show (TypeMatcherClause t) = "(MatcherClause " ++ show t ++ ")"
