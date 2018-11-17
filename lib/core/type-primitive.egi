@@ -7,7 +7,7 @@
 
 ;; This PairII is appended for README.md.
 (define-ADT PairII <Pair Integer Integer>)
-(define $unorderd-pair
+(define $unordered-pair
  (lambda [$a]
   (matcher {[<pair $ $> [a a]
    {[<pair $x $y> {[x y] [y x]}]}]
