@@ -65,7 +65,7 @@ import qualified Data.Vector                 as V
 import           Data.Text                   (Text)
 import qualified Data.Text                   as T
 
-import           Data.Char                   (chr, ord)
+import           Data.Char                   (chr, ord, toLower)
 import           Debug.Trace
 import           Language.Egison.Expressions
 import           Language.Egison.Parser
@@ -1312,8 +1312,9 @@ primitivePatPatternMatch env (PPValuePat name) (ValuePat expr) = do
   ref <- lift $ newObjectRef env expr
   return ([], [(stringToVar name, ref)])
 primitivePatPatternMatch env (PPInductivePat name patterns) (InductivePat name' exprs)
-  | name == name' && length patterns == length exprs =
+  | map toLower name == map toLower name' && length patterns == length exprs =
     (concat *** concat) . unzip <$> zipWithM (primitivePatPatternMatch env) patterns exprs
+     -- Ignore cases to equate a constructer with the corresponding pattern constructer
   | otherwise = matchFail
 primitivePatPatternMatch _ _ _ = matchFail
 
@@ -1324,13 +1325,14 @@ primitiveDataPatternMatch (PDPatVar name) whnf = do
   return [(stringToVar name, ref)]
 primitiveDataPatternMatch (PDInductivePat name patterns) whnf = do
   case whnf of
-    Intermediate (IInductiveData name' refs) | name == name' -> do
+    Intermediate (IInductiveData name' refs) | map toLower name == map toLower name' -> do
       whnfs <- lift $ mapM evalRef refs
       concat <$> zipWithM primitiveDataPatternMatch patterns whnfs
-    Value (InductiveData name' vals) | name == name' -> do
+    Value (InductiveData name' vals) | map toLower name == map toLower name' -> do
       let whnfs = map Value vals
       concat <$> zipWithM primitiveDataPatternMatch patterns whnfs
     _ -> matchFail
+     -- Ignore cases to equate a constructer with the corresponding pattern constructer
 primitiveDataPatternMatch (PDTuplePat patterns) whnf = do
   case whnf of
     Intermediate (ITuple refs) -> do
