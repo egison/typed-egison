@@ -6,9 +6,12 @@
 (define-type-of $lt? (Fun (Tuple (TypeVar a) (TypeVar a)) Bool))
 
 ;; This PairII is appended for README.md.
-(define-ADT PairII <Pair Integer Integer>)
-(define $unordered-pair
+(define-ADT PairII <PairII Integer Integer>)
+(define $unordered-PairII
  (lambda [$a]
-  (matcher {[<pair $ $> [a a]
-   {[<pair $x $y> {[x y] [y x]}]}]
+  (matcher {[<pairII $ $> [a a]
+   {[<pairII $x $y> {[x y] [y x]}]}]
    [$ [something] {[$tgt {tgt}]}]})))
+(define-ADT PairPP <PairPP (TypeVar PairII) (TypeVar PairII)>)
+
+
