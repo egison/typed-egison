@@ -1221,6 +1221,8 @@ type Matcher = EgisonValue
 type PrimitiveFunc = WHNFData -> EgisonM WHNFData
 
 instance Show Expr where
+  show (InductiveDataExpr s e) = "<" ++ s ++ " " ++ show e ++ ">"
+  show (MatchAllExpr e1 e2 e3) = "(match-all" ++ " " ++ show e1 ++ " " ++ show e2 ++ ")"
   show (CharExpr c) = "c#" ++ [c]
   show (StringExpr str) = "\"" ++ T.unpack str ++ "\""
   show (BoolExpr True) = "#t"
