@@ -8,7 +8,7 @@ You can test codes started with `>` in the Typed Egison interpreter.
 I assume you use Linux.
 Please use following commands to build Typed Egison.
 ```
-git clone git@github.com:egison/typed-egison.git
+git clone https://github.com/egison/typed-egison.git
 stack init
 stack solver
 stack build
