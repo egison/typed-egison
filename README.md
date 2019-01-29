@@ -90,7 +90,7 @@ What I want to teach in this section is types of these parts. These types are
 
 In this example, `match-all` takes 3 arguments.  
 Their types are `PairII`, `(Matcher PairII)`, `(Tuple (Pattern PairII) Integer)` respectively and return `(Collection Integer)`.   
-More generally, `match-all` takes 3 arguments, `a`, `(Matcher a)`, `(Tuple (Pattern a, b))` and return `(Collection b)`.  
+More generally, `match-all` takes 3 arguments, `a`, `(Matcher a)`, `(Tuple (Pattern a) b)` and return `(Collection b)`.  
  `a` and `b` are variables which refer some types like `Integer`, `Bool` or `PairII`.
 
 In rough words, `match-all` has this type
